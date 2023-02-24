@@ -132,7 +132,7 @@ return false;
 /*Funcion para analizar el comando de mkdisk*/
 void mkdisk(char *parametros){
     //Banderas para determinar si los parámetros fueron recibidos
-    bool fsize, funit, fpath = false;
+    bool fsize, funit, fpath, ffit = false;
 
     //Pasamos a la siguiente posicion
     parametros = strtok(NULL, " ");
@@ -140,7 +140,7 @@ void mkdisk(char *parametros){
     MBR mbr;
     int size=0;
     string path;
-    char unit;
+    char unit, fit;
     while(parametros!=NULL){
         string tmp = parametros;
         string tipo = get_tipo_parametro(tmp);
@@ -170,15 +170,37 @@ void mkdisk(char *parametros){
             }
         }
 
+        else if(tipo==">fit"){
+            char* aj = new char[valor.length()];
+            strcpy(aj,valor.c_str());
+            if(strcasecmp(aj,"bf")==0){
+                //Mejor ajuste
+                fit='B';
+                ffit=true;
+            }
+            else if(strcasecmp(aj,"ff")==0){
+                //Primer ajuste
+                fit='F';
+                ffit=true;
+            }
+            else if(strcasecmp(aj,"wf")==0){
+                //Peor ajuste
+                fit='W';
+                ffit=true;
+            }
+            else{
+                cout<<"Error: Valor de ajuste inválido"<<endl;
+            }
+        }
+
         else if(tipo==">path"){
             valor=regresarEspacio(valor); //Regreso el espacio reemplazado al inicio
         
             verifyDirectory(valor); //Verifico si el directorio no existe para crearlo
             path=valor;
             fpath=true;
-
-
         }
+
         else{
             cout<<"Error: Parámetro inválido"<<endl;
         }
@@ -197,7 +219,12 @@ void mkdisk(char *parametros){
                 size = size*1024*1024; 
             }
         }
+
+        if(!ffit){{
+            fit='F';
+        }
         mbr.mbr_tamanio=size;
+        mbr.dsk_fit=fit;
 
         time_t t = time(nullptr);
         mbr.mbr_fecha_creacion = t;
@@ -218,10 +245,12 @@ void mkdisk(char *parametros){
 
 
     }
+    }
     else{
-        cout<<"Error: No es posible crear el disco duro"<<endl;
+        cout<<"Error: No es posible crear el disco duro, faltan parámetros obligatorios"<<endl;
     }
   
+
 }
 
 
@@ -271,6 +300,7 @@ void execute(char* parametros){
 
 MBR firstFit(MBR mbr, int psize, char name[16]){
     int ocupado;
+    /*
     if(mbr.partition1.part_s>0){
         ocupado+=mbr.partition1.part_s;
 
@@ -344,6 +374,7 @@ MBR firstFit(MBR mbr, int psize, char name[16]){
         }
         
     }
+    */
     return mbr;
 }
 
