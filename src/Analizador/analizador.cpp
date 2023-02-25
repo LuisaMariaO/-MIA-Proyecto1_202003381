@@ -106,16 +106,23 @@ bool existsFile(string name){
 }
 
 bool crearArchivo(string ruta, int tamano){
+   
 try{
 
 if(!existsFile(ruta)){
-        FILE *arch = fopen(ruta.c_str(),"wb"); //Creo el nuevo archivo de profesores
-        char ceros[tamano]; //Lleno mi arreglo de 0
-        for (int i=0 ; i<tamano; i++){
-            ceros[i] = 0;
+        FILE *arch = fopen(ruta.c_str(),"wb"); //Creo el nuevo archivo
+        //char ceros[tamano]; //Lleno mi arreglo de 0
+        char cero = 0;
+        //cout<<"Hola"<<endl;
+        //for (int i=0 ; i<tamano; i++){
+          //  ceros[i] = 0;
             
-        }
-        fwrite(&ceros, sizeof(ceros),1,arch); //Escribo los 0s en el archivo
+        //}
+        //cout<<ceros<<endl;
+      for (int i=0 ; i<tamano; i++){
+        fwrite(&cero, sizeof(cero),1,arch); //Escribo los 0s en el archivo
+      }
+        
         fclose(arch);
         return true;
     }
@@ -224,15 +231,18 @@ void mkdisk(char *parametros){
             fit='F';
         }
         mbr.mbr_tamanio=size;
+       
         mbr.dsk_fit=fit;
+     
 
         time_t t = time(nullptr);
         mbr.mbr_fecha_creacion = t;
 
         srand(time(0)); //Seed para números realmente aleatorios
         mbr.mbr_dsk_signature = rand();
-
+      
         if(crearArchivo(path,size)){
+            
             char *ruta = new char[path.length()];
             strcpy(ruta,path.c_str());
             FILE *arch = fopen(ruta,"rb+"); //Abro el archivo
