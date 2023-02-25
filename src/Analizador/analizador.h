@@ -12,6 +12,8 @@ bool crearArchivo(string ruta, int tamano);
 bool existsFile(string ruta);
 
 void mkdisk(char* parametros);
+void rmdisk(char* parametros);
+void removeFile(string path);
 void execute(char* parametros);
 void leerScript(string nombre);
 void fdisk(char* parametros);

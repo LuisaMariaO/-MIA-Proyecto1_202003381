@@ -112,6 +112,7 @@ try{
 if(!existsFile(ruta)){
         FILE *arch = fopen(ruta.c_str(),"wb"); //Creo el nuevo archivo
         //char ceros[tamano]; //Lleno mi arreglo de 0
+        /*ARREGLO: Se cambia el método pues los arreglos tienen límite, al parecer c:*/
         char cero = 0;
         //cout<<"Hola"<<endl;
         //for (int i=0 ; i<tamano; i++){
@@ -263,8 +264,59 @@ void mkdisk(char *parametros){
 
 }
 
+void rmdisk(char* parametros){
+    parametros = strtok(NULL," ");
+    string path;
+    while(parametros!=NULL){
+        string tmp = parametros;
+        string tipo = get_tipo_parametro(tmp);
+        string valor = get_valor_parametro(tmp);
 
+        if(tipo == ">path"){
+            valor=regresarEspacio(valor);
+            path=valor;
+            
+        }
+        else{
+            cout<<"Error: Parámetro no válido"<<endl;
+        }
+        parametros = strtok(NULL, " ");
+    }
+    removeFile(path);
+}
 
+void removeFile(string path){
+    char op;
+    cout<<"Desea eliminar el disco "<<path<<"? [S/N] "<<endl;
+    cin>>op;
+
+    if(op=='S'||op=='s'){
+        //Se elimina
+        char*ruta = new char[path.length()];
+        strcpy(ruta,path.c_str());
+        try{
+            if(existsFile(path)){
+                remove(ruta);
+                cout<<"¡Disco duro eliminado!"<<endl;
+            }
+            else{
+                cout<<"Error: No existe el disco duro"<<endl;
+            }
+            
+        }
+        catch(exception e){
+            cout<<"Error: No se puede eliminar el disco"<<endl;
+        }
+    }
+    else if(op=='N'|| op=='n'){
+        //No se elimina
+        cout<<"Eliminación de disco cancelada"<<endl;
+    }
+    else{
+        cout<<"Error: Confirmación no válida"<<endl;
+
+    }
+}
 
 void leerScript(string nombre){
     try{
@@ -513,6 +565,9 @@ void analizar(char *comando) {
     char *token = strtok(comando, " ");
     if(strcasecmp(token, "mkdisk") == 0){
         mkdisk(token);
+    }
+    else if(strcasecmp(token,"rmdisk")==0){
+        rmdisk(token);
     }
     else if(strcasecmp(token,"execute")==0){
         execute(token);

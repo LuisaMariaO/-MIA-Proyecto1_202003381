@@ -11,3 +11,5 @@ mkdisk >size=5 >unit=M >path="/home/mis discos/Disco3.dsk"
 
 #Creará un disco de 10 Mb ya que no hay parámetro unit
 mkdisk >size=10 >path="/home/mis discos/Disco4.dsk"
+
+rmdisk >path="/home/mis discos/Disco4.dsk"
