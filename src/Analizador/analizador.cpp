@@ -12,6 +12,9 @@
 string get_tipo_parametro(string parametro){
     //Iteramos hasta obtener el tipo del parametro
     string tipo = "";
+    if(parametro[0]=='#'){
+        return parametro;
+    }
     for(int i = 0; i < parametro.length(); i++){
         if(parametro.at(i) == '=') break;
         char caracter = tolower(parametro.at(i));
@@ -209,6 +212,11 @@ void mkdisk(char *parametros){
             fpath=true;
         }
 
+        else if(tipo[0] == '#'){
+            //Si viene un comentario, no pasa nada
+            break;
+        }
+
         else{
             cout<<"Error: Parámetro inválido"<<endl;
         }
@@ -276,6 +284,10 @@ void rmdisk(char* parametros){
             valor=regresarEspacio(valor);
             path=valor;
             
+        }
+        else if(tipo[0] == '#'){
+            //Si viene un comentario, no pasa nada
+            break;
         }
         else{
             cout<<"Error: Parámetro no válido"<<endl;
@@ -352,6 +364,10 @@ void execute(char* parametros){
             path=valor;
             leerScript(path);
         }
+        else if(tipo[0] == '#'){
+            //Si viene un comentario, no pasa nada
+            break;
+        }
         else{
             cout<<"Error: Parámetro no válido"<<endl;
         }
@@ -360,91 +376,550 @@ void execute(char* parametros){
     }
 }
 
-MBR firstFit(MBR mbr, int psize, char name[16]){
-    int ocupado;
-    /*
-    if(mbr.partition1.part_s>0){
-        ocupado+=mbr.partition1.part_s;
+MBR ajustar(MBR mbr, int psize, char name[16], char type, char fit, FILE *archivo){
+    bool extendida=false;
+    int ocupado, iniEbr, sizeEbr;
+    for (int i=0; i<4; i++){
+        //Si ya existe una particion extendida, no será posible crear otra
+        if(mbr.particiones[i].part_type=='E'){
+            extendida=true;
+            iniEbr=mbr.particiones[i].part_start;
+            sizeEbr=mbr.particiones[i].part_s;
+        }
+    }
 
-        
-        if(mbr.partition2.part_s>0){
-            ocupado+=mbr.partition2.part_s;
-
-
-            if(mbr.partition3.part_s>0){
-                ocupado+=mbr.partition3.part_s;
-
-
-                if(mbr.partition4.part_s>0){
-                    cout<<"Error: Límite de particiones alcanzado"<<endl;
-                }
-                else{
-                    if((psize+ocupado) < mbr.mbr_tamanio){
-                    mbr.partition4.part_s=psize;
-                    char* nombre;
-                    strcpy(mbr.partition4.part_name, name);
-                    cout<<"¡Partición creada con éxito!"<<endl;
-                    return mbr;
-                    }
-                    else{
-                        cout<<"Error: Espacio insuficiente en el disco"<<endl;
-                    }
-                }
+    if(type=='P'){
+        //Partición primaria
+        if(mbr.dsk_fit=='F'){
+            mbr = firstFitP(mbr, psize, name, fit);
+        }
 
 
 
-            }
-            else{
-                if((psize+ocupado) < mbr.mbr_tamanio){
-                mbr.partition3.part_s=psize;
-                char* nombre;
-                strcpy(mbr.partition3.part_name, name);
-                cout<<"¡Partición creada con éxito!"<<endl;
-                return mbr;
-                }
-                else{
-                    cout<<"Error: Espacio insuficiente en el disco"<<endl;
-                }
-            }
+    }
+    else if(type=='E'){
+        //Partición extendida
+        //Si ya existe una partición extendida, no se puede crear.
 
-
+        if(extendida){
+            cout<<"Error: Ya existe una partición extendida en el disco"<<endl;
         }
         else{
-            if((psize+ocupado) < mbr.mbr_tamanio){
-            mbr.partition2.part_s=psize;
-            char* nombre;
-            strcpy(mbr.partition2.part_name, name);
-            cout<<"¡Partición creada con éxito!"<<endl;
-            return mbr;
-            }
-            else{
-                cout<<"Error: Espacio insuficiente en el disco"<<endl;
+            if(mbr.dsk_fit=='F'){
+                firstFitE(mbr, psize, name,fit, archivo);
             }
         }
 
     }
     else{
-        if(psize < mbr.mbr_tamanio){
-        mbr.partition1.part_s=psize;
-        char* nombre;
-        strcpy(mbr.partition1.part_name, name);
-        cout<<"¡Partición creada con éxito!"<<endl;
-        return mbr;
+        //Si la partición es lógica, se verifica que exista una partición extendida
+        if(extendida){
+            EBR ebr;
+            fseek(archivo,iniEbr,SEEK_SET);
+            fread(&ebr, sizeof(ebr),1,archivo);
+            //if(mbr.dsk_fit=='F'){
+                firstFitL(ebr, psize, name, fit, sizeEbr, archivo);
+            //}
         }
         else{
-            cout<<"Error: Espacio insuficiente en el disco"<<endl;
+            cout<<"Error: No se puede crear una partición lógica si no existe una partición extendida"<<endl;
+        }
+    }
+    return mbr;
+}
+
+MBR firstFitP(MBR mbr, int psize, char name[16], char fit){
+    int ocupado = sizeof(mbr);
+    int pos=-1; //Posición donde será insertada la partición
+    Particion particion;
+    particion.part_status='A';
+    particion.part_type='P';
+    particion.part_fit=fit;
+    particion.part_s=psize;
+    strcpy(particion.part_name, name);
+    for(int i=0; i<4; i++){
+        
+        if(mbr.particiones[i].part_status=='I'){ //Si la partición está libre
+            if(mbr.particiones[i].part_s==0){ //Si el tamaño es 0, es decir, nunca ha sido ocupado
+                pos = i;
+            }
+            
+            else if(mbr.particiones[i].part_s>=particion.part_s){ //O si el espacio es mayor o igual al de la nueva partición
+                pos = i;
+            }
+        }
+        else{
+            ocupado+=mbr.particiones[i].part_s;
+        }
+    }
+
+    if(pos>=0){
+        //Si se pudo encontrar el lugar de la partición
+        if((ocupado+particion.part_s)<mbr.mbr_tamanio){
+            //Si la partición no pasa el límite del disco
+
+            if(mbr.particiones[pos].part_start==0){ //Si el espacio todavía no tiene inicio asignado
+            if(pos==0){
+                particion.part_start = sizeof(mbr);
+            }
+            else if(pos==1){
+                particion.part_start = sizeof(mbr) + mbr.particiones[0].part_s;
+            }
+            else if(pos==2){
+                particion.part_start = sizeof(mbr) + mbr.particiones[0].part_s + mbr.particiones[1].part_s;
+            }
+            else if(pos==3){
+                particion.part_start = sizeof(mbr) + mbr.particiones[0].part_s + mbr.particiones[1].part_s + mbr.particiones[2].part_s;
+            }
+            }
+
+            mbr.particiones[pos] = particion;
+        }
+        else{
+            cout<<"Error: No hay espacio suficiente para la partición"<<endl;
+        }
+    }
+    else{
+        cout<<"Error: No se puede sobrepasar el límite de particiones primarias"<<endl;
+    }
+
+
+    return mbr;
+}
+
+MBR firstFitE(MBR mbr, int psize, char name[16], char fit,  FILE *archivo){
+    int ocupado = sizeof(mbr);
+    int pos=-1; //Posición donde será insertada la partición
+    Particion particion;
+    particion.part_status='A';
+    particion.part_type='E';
+    particion.part_fit=fit;
+    particion.part_s=psize;
+    
+    strcpy(particion.part_name, name);
+    for(int i=0; i<4; i++){
+        
+        if(mbr.particiones[i].part_status=='I'){ //Si la partición está libre
+            if(mbr.particiones[i].part_s==0){ //Si el tamaño es 0, es decir, nunca ha sido ocupado
+                pos = i;
+            }
+            
+            else if(mbr.particiones[i].part_s>=particion.part_s){ //O si el espacio es mayor o igual al de la nueva partición
+                pos = i;
+            }
+        }
+        else{
+            ocupado+=mbr.particiones[i].part_s;
+        }
+    }
+
+    if(pos>=0){
+        //Si se pudo encontrar el lugar de la partición
+        if((ocupado+particion.part_s)<mbr.mbr_tamanio){
+            //Si la partición no pasa el límite del disco
+
+            if(mbr.particiones[pos].part_start==0){ //Si el espacio todavía no tiene inicio asignado
+            if(pos==0){
+                particion.part_start = sizeof(mbr);
+            }
+            else if(pos==1){
+                particion.part_start = sizeof(mbr) + mbr.particiones[0].part_s;
+            }
+            else if(pos==2){
+                particion.part_start = sizeof(mbr) + mbr.particiones[0].part_s + mbr.particiones[1].part_s;
+            }
+            else if(pos==3){
+                particion.part_start = sizeof(mbr) + mbr.particiones[0].part_s + mbr.particiones[1].part_s + mbr.particiones[2].part_s;
+            }
+            }
+
+            mbr.particiones[pos] = particion;
+
+            //EBR inicial
+
+            
+            EBR ebr;
+            ebr.part_status = 'I';
+            ebr.part_start=mbr.particiones[pos].part_start;
+            ebr.part_next=-1;
+
+            fseek(archivo, ebr.part_start,SEEK_SET);
+            fwrite(&ebr, sizeof(ebr),1,archivo);
+        }
+        else{
+            cout<<"Error: No hay espacio suficiente para la partición"<<endl;
+        }
+    }
+    else{
+        cout<<"Error: No se puede sobrepasar el límite de 4 particiones primarias y extendidas"<<endl;
+    }
+
+
+    
+    return mbr;
+}
+
+void firstFitL(EBR inicial, int psize, char name[16], char fit, int limite, FILE *archivo){
+    int ocupado = sizeof(inicial);
+    int pos=-1; //Posición donde será insertada la partición
+    int libre, size;
+    EBR particion;
+    particion.part_status='A';
+    particion.part_fit=fit;
+    particion.part_s=psize;
+    strcpy(particion.part_name, name);
+    if(inicial.part_status='I'){
+        //Si el ebr inicial está libre, se utiliza este
+        if(ocupado+particion.part_s<=limite){
+            inicial = particion;
+        }
+        else{
+            cout<<"Error: No se puede sobrepasar el tamaño de la partición extendida"<<endl;
+        }
+    }
+    else{
+        EBR tmp;
+        while(tmp.part_next!=-1){
+
+            
+            ocupado=ocupado+(tmp.part_s - sizeof(EBR));
+            fseek(archivo, tmp.part_next,SEEK_SET);
+            fread(&tmp,sizeof(tmp), 1, archivo);
+        }
+
+        if(ocupado+particion.part_s<=limite){
+            particion.part_start=ocupado;
+            inicial = particion;
+        }
+        else{
+            cout<<"Error: No se puede sobrepasar el tamaño de la partición extendida"<<endl;
+        }
+    }
+}
+
+MBR bestFitP(MBR mbr, int psize, char name[16], char fit){
+    int ocupado = sizeof(mbr);
+    int mejor;
+    int pos=-1; //Posición donde será insertada la partición
+    Particion particion;
+    particion.part_status='A';
+    particion.part_type='P';
+    particion.part_fit=fit;
+    particion.part_s=psize;
+    strcpy(particion.part_name, name);
+    for(int i=0; i<4; i++){
+        
+        if(mbr.particiones[i].part_status=='I'){ //Si la partición está libre
+            
+            if(mbr.particiones[i].part_s==0){ //Si el tamaño es 0, es decir, nunca ha sido ocupado
+                pos = i;
+                break;
+            }
+            
+            else{ //Si la nueva partición cabe y sobra el menor espacio posible
+                if(mbr.particiones[i].part_s>=particion.part_s){
+                    if(mejor==0){
+                        mejor = mbr.particiones[i].part_s;
+                        pos=i;
+                    }
+                    else if(mbr.particiones[i].part_s<=mejor){
+                        pos = i;
+                        mejor = mbr.particiones[i].part_s;
+                    }
+
+                    
+                }
+                
+            }
+        }
+        else{
+            ocupado+=mbr.particiones[i].part_s;
+        }
+    }
+
+    if(pos>=0){
+        //Si se pudo encontrar el lugar de la partición
+        if((ocupado+particion.part_s)<mbr.mbr_tamanio){
+            //Si la partición no pasa el límite del disco
+
+            if(mbr.particiones[pos].part_start==0){ //Si el espacio todavía no tiene inicio asignado
+            if(pos==0){
+                particion.part_start = sizeof(mbr);
+            }
+            else if(pos==1){
+                particion.part_start = sizeof(mbr) + mbr.particiones[0].part_s;
+            }
+            else if(pos==2){
+                particion.part_start = sizeof(mbr) + mbr.particiones[0].part_s + mbr.particiones[1].part_s;
+            }
+            else if(pos==3){
+                particion.part_start = sizeof(mbr) + mbr.particiones[0].part_s + mbr.particiones[1].part_s + mbr.particiones[2].part_s;
+            }
+            }
+
+            mbr.particiones[pos] = particion;
+        }
+        else{
+            cout<<"Error: No hay espacio suficiente para la partición"<<endl;
+        }
+    }
+    else{
+        cout<<"Error: No se puede sobrepasar el límite de particiones primarias"<<endl;
+    }
+
+
+    return mbr;
+}
+
+MBR bestFitE(MBR mbr, int psize, char name[16], char fit,  FILE *archivo){
+    int ocupado = sizeof(mbr);
+    int mejor;
+    int pos=-1; //Posición donde será insertada la partición
+    Particion particion;
+    particion.part_status='A';
+    particion.part_type='E';
+    particion.part_fit=fit;
+    particion.part_s=psize;
+    
+    strcpy(particion.part_name, name);
+    for(int i=0; i<4; i++){
+        
+        if(mbr.particiones[i].part_status=='I'){ //Si la partición está libre
+            if(mbr.particiones[i].part_s==0){ //Si el tamaño es 0, es decir, nunca ha sido ocupado
+                pos = i;
+                break;
+            }
+            
+              else{ //Si la nueva partición cabe y sobra el menor espacio posible
+                if(mbr.particiones[i].part_s>=particion.part_s){
+                    if(mejor==0){
+                        mejor = mbr.particiones[i].part_s;
+                        pos=i;
+                    }
+                    else if(mbr.particiones[i].part_s<=mejor){
+                        pos = i;
+                        mejor = mbr.particiones[i].part_s;
+                    }
+                
+            }
+              }
         }
         
+        else{
+            ocupado+=mbr.particiones[i].part_s;
+        }
     }
-    */
+
+    if(pos>=0){
+        //Si se pudo encontrar el lugar de la partición
+        if((ocupado+particion.part_s)<mbr.mbr_tamanio){
+            //Si la partición no pasa el límite del disco
+
+            if(mbr.particiones[pos].part_start==0){ //Si el espacio todavía no tiene inicio asignado
+            if(pos==0){
+                particion.part_start = sizeof(mbr);
+            }
+            else if(pos==1){
+                particion.part_start = sizeof(mbr) + mbr.particiones[0].part_s;
+            }
+            else if(pos==2){
+                particion.part_start = sizeof(mbr) + mbr.particiones[0].part_s + mbr.particiones[1].part_s;
+            }
+            else if(pos==3){
+                particion.part_start = sizeof(mbr) + mbr.particiones[0].part_s + mbr.particiones[1].part_s + mbr.particiones[2].part_s;
+            }
+            }
+
+            mbr.particiones[pos] = particion;
+
+            //EBR inicial
+
+            
+            EBR ebr;
+            ebr.part_status = 'I';
+            ebr.part_start=mbr.particiones[pos].part_start;
+            ebr.part_next=-1;
+
+            fseek(archivo, ebr.part_start,SEEK_SET);
+            fwrite(&ebr, sizeof(ebr),1,archivo);
+        }
+        else{
+            cout<<"Error: No hay espacio suficiente para la partición"<<endl;
+        }
+    }
+    else{
+        cout<<"Error: No se puede sobrepasar el límite de 4 particiones primarias y extendidas"<<endl;
+    }
+
+
+    
+    return mbr;
+}
+
+MBR worstFitP(MBR mbr, int psize, char name[16], char fit){
+    int ocupado = sizeof(mbr);
+    int mejor;
+    int pos=-1; //Posición donde será insertada la partición
+    Particion particion;
+    particion.part_status='A';
+    particion.part_type='P';
+    particion.part_fit=fit;
+    particion.part_s=psize;
+    strcpy(particion.part_name, name);
+    for(int i=0; i<4; i++){
+        
+        if(mbr.particiones[i].part_status=='I'){ //Si la partición está libre
+            
+            if(mbr.particiones[i].part_s==0){ //Si el tamaño es 0, es decir, nunca ha sido ocupado
+                pos = i;
+                break;
+            }
+            
+            else{ //Si la nueva partición cabe y sobra el menor espacio posible
+                if(mbr.particiones[i].part_s>=particion.part_s){
+                    if(mejor==0){
+                        mejor = mbr.particiones[i].part_s;
+                        pos=i;
+                    }
+                    else if(mbr.particiones[i].part_s>=mejor){
+                        pos = i;
+                        mejor = mbr.particiones[i].part_s;
+                    }
+
+                    
+                }
+                
+            }
+        }
+        else{
+            ocupado+=mbr.particiones[i].part_s;
+        }
+    }
+
+    if(pos>=0){
+        //Si se pudo encontrar el lugar de la partición
+        if((ocupado+particion.part_s)<mbr.mbr_tamanio){
+            //Si la partición no pasa el límite del disco
+
+            if(mbr.particiones[pos].part_start==0){ //Si el espacio todavía no tiene inicio asignado
+            if(pos==0){
+                particion.part_start = sizeof(mbr);
+            }
+            else if(pos==1){
+                particion.part_start = sizeof(mbr) + mbr.particiones[0].part_s;
+            }
+            else if(pos==2){
+                particion.part_start = sizeof(mbr) + mbr.particiones[0].part_s + mbr.particiones[1].part_s;
+            }
+            else if(pos==3){
+                particion.part_start = sizeof(mbr) + mbr.particiones[0].part_s + mbr.particiones[1].part_s + mbr.particiones[2].part_s;
+            }
+            }
+
+            mbr.particiones[pos] = particion;
+        }
+        else{
+            cout<<"Error: No hay espacio suficiente para la partición"<<endl;
+        }
+    }
+    else{
+        cout<<"Error: No se puede sobrepasar el límite de particiones primarias"<<endl;
+    }
+
+
+    return mbr;
+}
+
+MBR worstFitE(MBR mbr, int psize, char name[16], char fit,  FILE *archivo){
+    int ocupado = sizeof(mbr);
+    int mejor;
+    int pos=-1; //Posición donde será insertada la partición
+    Particion particion;
+    particion.part_status='A';
+    particion.part_type='E';
+    particion.part_fit=fit;
+    particion.part_s=psize;
+    
+    strcpy(particion.part_name, name);
+    for(int i=0; i<4; i++){
+        
+        if(mbr.particiones[i].part_status=='I'){ //Si la partición está libre
+            if(mbr.particiones[i].part_s==0){ //Si el tamaño es 0, es decir, nunca ha sido ocupado
+                pos = i;
+                break;
+            }
+            
+              else{ //Si la nueva partición cabe y sobra el menor espacio posible
+                if(mbr.particiones[i].part_s>=particion.part_s){
+                    if(mejor==0){
+                        mejor = mbr.particiones[i].part_s;
+                        pos=i;
+                    }
+                    else if(mbr.particiones[i].part_s>=mejor){
+                        pos = i;
+                        mejor = mbr.particiones[i].part_s;
+                    }
+                
+            }
+              }
+        }
+        
+        else{
+            ocupado+=mbr.particiones[i].part_s;
+        }
+    }
+
+    if(pos>=0){
+        //Si se pudo encontrar el lugar de la partición
+        if((ocupado+particion.part_s)<mbr.mbr_tamanio){
+            //Si la partición no pasa el límite del disco
+
+            if(mbr.particiones[pos].part_start==0){ //Si el espacio todavía no tiene inicio asignado
+            if(pos==0){
+                particion.part_start = sizeof(mbr);
+            }
+            else if(pos==1){
+                particion.part_start = sizeof(mbr) + mbr.particiones[0].part_s;
+            }
+            else if(pos==2){
+                particion.part_start = sizeof(mbr) + mbr.particiones[0].part_s + mbr.particiones[1].part_s;
+            }
+            else if(pos==3){
+                particion.part_start = sizeof(mbr) + mbr.particiones[0].part_s + mbr.particiones[1].part_s + mbr.particiones[2].part_s;
+            }
+            }
+
+            mbr.particiones[pos] = particion;
+
+            //EBR inicial
+
+            
+            EBR ebr;
+            ebr.part_status = 'I';
+            ebr.part_start=mbr.particiones[pos].part_start;
+            ebr.part_next=-1;
+
+            fseek(archivo, ebr.part_start,SEEK_SET);
+            fwrite(&ebr, sizeof(ebr),1,archivo);
+        }
+        else{
+            cout<<"Error: No hay espacio suficiente para la partición"<<endl;
+        }
+    }
+    else{
+        cout<<"Error: No se puede sobrepasar el límite de 4 particiones primarias y extendidas"<<endl;
+    }
+
+
+    
     return mbr;
 }
 
 void fdisk(char* parametros){
     parametros = strtok(NULL, " ");
-    bool fsize, funit, fpath, fname = false;
-    int size;
-    char unit;
+    bool fsize, funit, fpath, fname, ftype, ffit, fdelete, fadd = false;
+    int size, add;
+    char unit, type, fit;
     string path;
     char name[16];
     while(parametros!=NULL){
@@ -488,10 +963,75 @@ void fdisk(char* parametros){
         }
 
         else if(tipo==">name"){
+            valor=regresarEspacio(valor);
             strcpy(name,valor.c_str());
            
             fname=true;
         }
+
+        else if(tipo==">type"){
+            if(valor=="p" || valor=="P"){
+                type='P';
+                ftype=true;
+            }
+            else if(valor=="e" || valor=="E"){
+                type='E';
+                ftype=true;
+            }
+            else if(valor=="l" || valor=="L"){
+                type='L';
+                ftype=true;
+            }
+            else{
+                cout<<"Error: Tipo de partición inválido"<<endl;
+            }
+        }
+
+        else if(tipo==">fit"){
+            char* aj = new char[valor.length()];
+            if(strcasecmp(aj,"BF")==0){
+                fit='B';
+                ffit=true;
+            }
+            else if(strcasecmp(aj,"FF")==0){
+                ffit='F';
+                ffit=true;
+            }
+            else if(strcasecmp(aj,"WF")==0){
+                ffit='W';
+                ffit=true;
+            }
+            else{
+                cout<<"Error: Valor de ajuste inválido"<<endl;
+            }
+        }
+
+        else if(tipo==">delete"){
+            char * del = new char[valor.length()];
+            if(strcasecmp(del,"full")==0){
+                fdelete=true;
+            }
+            else{
+                cout<<"Parámetro delete inválido"<<endl;
+            }
+        }
+
+        else if(tipo==">add"){
+            try{
+                add = stoi(valor);
+                fadd=true;
+            }
+            catch(exception e){
+                cout<<"Error: Valor de >add no numérico"<<endl;
+                
+            }
+        }
+
+        else if(tipo[0] == '#'){
+            //Si viene un comentario, no pasa nada
+            break;
+        }
+        
 
         else{
             cout<<"Error: Parámetro no válido"<<endl;
@@ -499,6 +1039,7 @@ void fdisk(char* parametros){
         parametros = strtok(NULL, " ");
     }
 
+    /*Para la creación de particiones*/
     if(fsize && fpath && fname){
         
         if(!funit){
@@ -516,18 +1057,24 @@ void fdisk(char* parametros){
         char *ruta = new char[path.length()];
         
         strcpy(ruta,path.c_str());
-     
-        FILE *archivoe= fopen(ruta,"rb+");
-        fseek(archivoe,0,SEEK_SET);//Coloco el puntero al inicio del archivo
-        MBR mbr;
-        fread(&mbr, sizeof(mbr),1,archivoe);
-        mbr=firstFit(mbr,size,name);
+        if(existsFile(path)){
+            FILE *archivoe= fopen(ruta,"rb+");
+            fseek(archivoe,0,SEEK_SET);//Coloco el puntero al inicio del archivo
+            MBR mbr;
+            fread(&mbr, sizeof(mbr),1,archivoe);
+            ajustar(mbr, size, name, type, fit, archivoe);
+            
 
-        fseek(archivoe,0,SEEK_SET);//Coloco el puntero al inicio del archivo
-        fwrite(&mbr,sizeof(mbr),1,archivoe);
+            fseek(archivoe,0,SEEK_SET);//Coloco el puntero al inicio del archivo
+            fwrite(&mbr,sizeof(mbr),1,archivoe);
 
-   
-    fclose(archivoe);
+    
+            fclose(archivoe);
+        }
+        else{
+            cout<<"Error: No se encontró el disco duro"<<endl;
+        }
+
 
     }
 }
@@ -577,6 +1124,10 @@ void analizar(char *comando) {
     }
     else if(strcasecmp(token,"rep")==0){
         rep();
+    }
+    else if (token[0]=='#'){
+        //Si es un comentario, no pasa nada
+
     }
     else {
         cout << "Error: Comando no aceptado" << endl;

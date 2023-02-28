@@ -3,7 +3,7 @@ using namespace std;
 
 typedef struct 
 {
-    char part_status; //Indica si la partición está activa o no
+    char part_status; //Indica si la partición está activa o no A->Activa, I->Inactiva
     char part_type; //P->Primaria E->Extendida
     char part_fit; //B->BestFit F->FirstFit W->WorstFit
     int part_start; //Indica en qué byte del disco inicia la partición
