@@ -190,6 +190,7 @@ void mkdisk(char *parametros){
                 ffit=true;
             }
             else if(strcasecmp(aj,"ff")==0){
+               
                 //Primer ajuste
                 fit='F';
                 ffit=true;
@@ -236,12 +237,14 @@ void mkdisk(char *parametros){
             }
         }
 
-        if(!ffit){{
+        if(!ffit){
             fit='F';
         }
         mbr.mbr_tamanio=size;
        
         mbr.dsk_fit=fit;
+    
+        
      
 
         time_t t = time(nullptr);
@@ -264,7 +267,7 @@ void mkdisk(char *parametros){
 
 
     }
-    }
+    
     else{
         cout<<"Error: No es posible crear el disco duro, faltan parámetros obligatorios"<<endl;
     }
@@ -336,11 +339,15 @@ void leerScript(string nombre){
     script.open(nombre,ios::in);
     string comand;
     while(getline(script, comand)){
+        cout<<"\n"<<endl;
         cout<<comand<<endl;
+        if(comand.length()>5){ //En caso de saltos de linea
         char ccomand[100];
         strcpy(ccomand, comand.c_str());
-
+        
         analizar(ccomand); //Analiza cada comando del script
+        }
+        
         
     }
     script.close();
@@ -361,7 +368,8 @@ void execute(char* parametros){
         string valor = get_valor_parametro(tmp);
 
         if(tipo == ">path"){
-            path=valor;
+            
+            path=regresarEspacio(valor);
             leerScript(path);
         }
         else if(tipo[0] == '#'){
@@ -380,6 +388,10 @@ MBR ajustar(MBR mbr, int psize, char name[16], char type, char fit, FILE *archiv
     bool extendida=false;
     int ocupado, iniEbr, sizeEbr;
     for (int i=0; i<4; i++){
+        if(mbr.particiones[i].part_name==name){
+            cout<<"Error: Ya existe una particion con el nombre <"<<name<<">"<<endl;
+            return mbr;
+        }
         //Si ya existe una particion extendida, no será posible crear otra
         if(mbr.particiones[i].part_type=='E'){
             extendida=true;
@@ -392,6 +404,12 @@ MBR ajustar(MBR mbr, int psize, char name[16], char type, char fit, FILE *archiv
         //Partición primaria
         if(mbr.dsk_fit=='F'){
             mbr = firstFitP(mbr, psize, name, fit);
+        }
+        else if(mbr.dsk_fit=='B'){
+            mbr = bestFitP(mbr, psize, name, fit);
+        }
+        else{
+            mbr = worstFitP(mbr, psize, name, fit);
         }
 
 
@@ -406,7 +424,13 @@ MBR ajustar(MBR mbr, int psize, char name[16], char type, char fit, FILE *archiv
         }
         else{
             if(mbr.dsk_fit=='F'){
-                firstFitE(mbr, psize, name,fit, archivo);
+                mbr=firstFitE(mbr, psize, name,fit, archivo);
+            }
+            else if(mbr.dsk_fit=='B'){
+                mbr=bestFitE(mbr, psize, name, fit, archivo);
+            }
+            else{
+                mbr=worstFitE(mbr, psize, name, fit, archivo);
             }
         }
 
@@ -474,6 +498,7 @@ MBR firstFitP(MBR mbr, int psize, char name[16], char fit){
             }
 
             mbr.particiones[pos] = particion;
+            cout<<"Partición primaria creada!"<<endl;
         }
         else{
             cout<<"Error: No hay espacio suficiente para la partición"<<endl;
@@ -534,7 +559,7 @@ MBR firstFitE(MBR mbr, int psize, char name[16], char fit,  FILE *archivo){
             }
 
             mbr.particiones[pos] = particion;
-
+            cout<<"Partición extendida creada!"<<endl;
             //EBR inicial
 
             
@@ -572,6 +597,10 @@ void firstFitL(EBR inicial, int psize, char name[16], char fit, int limite, FILE
         //Si el ebr inicial está libre, se utiliza este
         if(ocupado+particion.part_s<=limite){
             inicial = particion;
+
+            fseek(archivo, inicial.part_start,1);
+            fwrite(&inicial,sizeof(EBR),1,archivo); //Escribo el nuevo ebr inicial
+            cout<<"Partición lógica creada!"<<endl;
         }
         else{
             cout<<"Error: No se puede sobrepasar el tamaño de la partición extendida"<<endl;
@@ -585,11 +614,15 @@ void firstFitL(EBR inicial, int psize, char name[16], char fit, int limite, FILE
             ocupado=ocupado+(tmp.part_s - sizeof(EBR));
             fseek(archivo, tmp.part_next,SEEK_SET);
             fread(&tmp,sizeof(tmp), 1, archivo);
+
         }
 
         if(ocupado+particion.part_s<=limite){
             particion.part_start=ocupado;
-            inicial = particion;
+            fseek(archivo, ocupado,1);
+            fwrite(&particion,sizeof(EBR),1,archivo); //Escribo el nuevo EBR
+            cout<<"Partición lógica creada!"<<endl;
+
         }
         else{
             cout<<"Error: No se puede sobrepasar el tamaño de la partición extendida"<<endl;
@@ -658,6 +691,7 @@ MBR bestFitP(MBR mbr, int psize, char name[16], char fit){
             }
 
             mbr.particiones[pos] = particion;
+            cout<<"Partición primaria creada!"<<endl;
         }
         else{
             cout<<"Error: No hay espacio suficiente para la partición"<<endl;
@@ -731,7 +765,7 @@ MBR bestFitE(MBR mbr, int psize, char name[16], char fit,  FILE *archivo){
             }
 
             mbr.particiones[pos] = particion;
-
+            cout<<"Partición extendida creada!"<<endl;
             //EBR inicial
 
             
@@ -817,6 +851,7 @@ MBR worstFitP(MBR mbr, int psize, char name[16], char fit){
             }
 
             mbr.particiones[pos] = particion;
+            cout<<"Partición primaria creada!"<<endl;
         }
         else{
             cout<<"Error: No hay espacio suficiente para la partición"<<endl;
@@ -892,7 +927,7 @@ MBR worstFitE(MBR mbr, int psize, char name[16], char fit,  FILE *archivo){
             mbr.particiones[pos] = particion;
 
             //EBR inicial
-
+            cout<<"Partición extendida creada!"<<endl;
             
             EBR ebr;
             ebr.part_status = 'I';
@@ -989,15 +1024,16 @@ void fdisk(char* parametros){
 
         else if(tipo==">fit"){
             char* aj = new char[valor.length()];
-            if(strcasecmp(aj,"BF")==0){
+            strcpy(aj, valor.c_str());
+            if(strcasecmp(aj,"bf")==0){
                 fit='B';
                 ffit=true;
             }
-            else if(strcasecmp(aj,"FF")==0){
+            else if(strcasecmp(aj,"ff")==0){
                 ffit='F';
                 ffit=true;
             }
-            else if(strcasecmp(aj,"WF")==0){
+            else if(strcasecmp(aj,"wf")==0){
                 ffit='W';
                 ffit=true;
             }
@@ -1058,6 +1094,7 @@ void fdisk(char* parametros){
         
         strcpy(ruta,path.c_str());
         if(existsFile(path)){
+            //TODO: No cargar el archivo de arriba a abajo
             FILE *archivoe= fopen(ruta,"rb+");
             fseek(archivoe,0,SEEK_SET);//Coloco el puntero al inicio del archivo
             MBR mbr;
