@@ -367,7 +367,7 @@ void execute(char* parametros){
 
         lista_param.push_back(parametros);
         parametros = strtok(NULL, " ");
-        
+        //TODO: REVISAR EL PROBLEMA DE LAS LÓGICAS
     }
     string path;
     while(!lista_param.empty()){
@@ -1415,6 +1415,7 @@ void ajustarL(char* ruta, int psize, char name[16], char type, char fit, char ds
         if(mbr.particiones[i].part_type=='E'){
             extendida=true;
             ext = mbr.particiones[i];
+            break;
         }
     }
 
@@ -1426,14 +1427,19 @@ void ajustarL(char* ruta, int psize, char name[16], char type, char fit, char ds
         fseek(archivo,ext.part_start,SEEK_SET); //Me muevo al inicio de la partición extendida para leer el EBR
         fread(&tmp, sizeof(EBR),1,archivo);
 
+        fseek(archivo,ext.part_start,SEEK_SET);
+        fread(&ultimo,sizeof(EBR),1,archivo);
+
           
         ocupado+=tmp.part_s;
 
         if(tmp.part_status=='0'){//Si el primer ebr no está usado, se inserta la nueva partición
             /*Actualizo el ebr*/
             if(ocupado+logica.part_s<=ext.part_s){ //Si cabe la partición
+                logica.part_start=ext.part_start;
                 fseek(archivo,ext.part_start,SEEK_SET);
                 fwrite(&logica,sizeof(EBR),1,archivo);
+                cout<<"¡Partición lógica <"<<name<<"> creada!"<<endl;
             }
             else{
                 cout<<"Error: Espacio insuficiente para la partición"<<endl;
@@ -1442,12 +1448,13 @@ void ajustarL(char* ruta, int psize, char name[16], char type, char fit, char ds
         else{
         
         while(tmp.part_next!=-1){
-            ocupado+=tmp.part_s;
+           
             fseek(archivo, tmp.part_next,SEEK_SET);
             fread(&tmp,sizeof(EBR),1,archivo); //Cambio a a la siguiente partición lógica
+            ocupado+=tmp.part_s;
             if(tmp.part_next==-1){//Si encontró otro ebr
-                fseek(archivo, tmp.part_next,SEEK_SET);
-                fread(&ultimo,sizeof(EBR),1,archivo);
+                memcpy(&ultimo,&tmp,sizeof(EBR));
+                
             }
         }
         if(ocupado+logica.part_s<=ext.part_s){
@@ -1498,9 +1505,10 @@ void ajustar(char* ruta, int psize, char name[16], char type, char fit){
             fseek(archivo,mbr.particiones[i].part_start,SEEK_SET); //Me muevo al inicoi de la partición extendida para leer el EBR
             fread(&tmp, sizeof(EBR),1,archivo);
 
-            if(name==tmp.part_name){
+            if(strcasecmp(name,tmp.part_name)==0){
                     cout<<"Error: Ya existe una partición llamada <"<<name<<">"<<endl;
                     colocar=false;
+                    break;
                 
             }
 
