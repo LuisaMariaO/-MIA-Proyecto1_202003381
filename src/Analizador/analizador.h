@@ -1,4 +1,5 @@
 #include <iostream>
+#include <list>
 #include "estructuras.h"
 using namespace std;
 
@@ -18,6 +19,11 @@ void execute(char* parametros);
 void leerScript(string nombre);
 void fdisk(char* parametros);
 MBR ajustar(MBR mbr, int psize, char name[16], char type, char fit, FILE *archivo);
+void ajustar(char* ruta, int psize, char name[16], char type, char fit);
+void ajustarP(char* ruta, int psize, char name[16], char type, char fit, char dsk_fit);
+void ajustarE(char* ruta, int psize, char name[16], char type, char fit, char dsk_fit);
+void ajustarL(char* ruta, int psize, char name[16], char type, char fit, char dsk_fit);
+
 MBR firstFitP(MBR mbr, int pzise, char name[16], char fit);
 MBR firstFitE(MBR mbr, int pzise, char name[16], char fit, FILE *archivo);
 MBR bestFitP(MBR mbr, int pzise, char name[16], char fit);

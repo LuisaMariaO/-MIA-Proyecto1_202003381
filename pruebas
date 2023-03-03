@@ -1,0 +1,50 @@
+#ELIMINACION DE DISCOS
+#El primero deberia dar error
+rmDisk >path=/home/luisa/Disco3.dsk
+rmDisk >path=/home/luisa/archivos/Disco3.dsk
+RMDISK >path="/home/luisa/archivos/mis archivos/Disco4.dsk"
+
+#CREACION DE PARTICIONES
+#Particiones en el disco1
+fdisk >type=P >unit=K >name=Part1 >size=7680 >path=/home/luisa/archivos/Disco1.dsk >fit=BF #7.5 MB
+fdisk >type=E >unit=K >name=Part2 >size=7680 >path=/home/luisa/archivos/Disco1.dsk >fit=FF
+fdisk >type=E >unit=K >name=Part3 >size=7680 >path=/home/luisa/archivos/Disco1.dsk >fit=WF #Deberia dar error
+fdisk >type=P >unit=K >name=Part3 >size=7680 >path=/home/luisa/archivos/Disco1.dsk >fit=WF
+fdisk >type=P >unit=K >name=Part4 >size=7680 >path=/home/luisa/archivos/Disco1.dsk >fit=BF
+FDISK >type=L >unit=k >name=Part5 >size=1280 >path=/home/luisa/archivos/Disco1.dsk >fit=BF #1.25 MB
+fdisk >type=L >unit=K >name=Part6 >size=1280 >path=/home/luisa/archivos/Disco1.dsk >fit=WF
+fdisk >type=L >unit=K >name=Part7 >size=1280 >path=/home/luisa/archivos/Disco1.dsk >fit=wf
+fdisk >type=L >unit=K >name=Part8 >size=1280 >path=/home/luisa/archivos/Disco1.dsk >fit=ff
+fdisk >type=L >unit=K >name=Part9 >size=1280 >path=/home/luisa/archivos/Disco1.dsk >fit=bf
+fdisk >type=L >unit=K >name=Part9 >size=1024 >path=/home/luisa/archivos/Disco1.dsk >fit=BF #ERROR nombre 
+
+#Particiones en el disco2
+fdisk >type=L >unit=k >name=Part11 >size=10240 >path=/home/luisa/archivos/Disco2.dsk >fit=BF #ERRROR no hay una extendida
+fdisk >type=L >unit=k >name=Part12 >size=10240 >path=/home/luisa/archivos/Disco2.dsk >fit=BF #ERRROR no hay una extendida
+fDisk >type=P >unit=K >name=Part11 >size=10240 >path=/home/luisa/archivos/Disco2.dsk >fit=BF #10 MB
+fDisk >type=P >unit=m >name=Part12 >size=5 >path=/home/luisa/archivos/Disco2.dsk >fit=FF #5MB
+fDisk >type=P >unit=K >name=Part13 >size=5120 >path=/home/luisa/archivos/Disco2.dsk >fit=WF #5 MB
+fdisk >type=E >unit=m >name=Part14 >size=20 >path=/home/luisa/archivos/Disco2.dsk #20 MB
+fdisk >type=L >unit=k >name=Part15 >size=1536 >path=/home/luisa/archivos/Disco2.dsk #1.5 MB
+fdisk >type=L >unit=k >name=Part16 >size=1536 >path=/home/luisa/archivos/Disco2.dsk >fit=BF
+fdisk >type=L >unit=k >name=Part17 >size=1536 >path=/home/luisa/archivos/Disco2.dsk >fit=FF
+fdisk >type=L >unit=k >name=Part18 >size=1536 >path=/home/luisa/archivos/Disco2.dsk >fit=BF
+fdisk >type=L >unit=k >name=Part19 >size=1536 >path=/home/luisa/archivos/Disco2.dsk >fit=WF
+fdisk >type=L >unit=k >name=Part20 >size=1536 >path=/home/luisa/archivos/Disco2.dsk >fit=BF
+fdisk >type=L >unit=k >name=Part21 >size=1536 >path=/home/luisa/archivos/Disco2.dsk >fit=FF
+fdisk >type=L >unit=k >name=Part22 >size=1536 >path=/home/luisa/archivos/Disco2.dsk >fit=BF
+fdisk >type=L >unit=k >name=Part23 >size=1536 >path=/home/luisa/archivos/Disco2.dsk >fit=FF
+fdisk >type=L >unit=k >name=Part24 >size=1536 >path=/home/luisa/archivos/Disco2.dsk >fit=BF
+fdisk >type=L >unit=k >name=Part25 >size=1536 >path=/home/luisa/archivos/Disco2.dsk >fit=wF
+fdisk >type=L >unit=k >name=Part26 >size=1536 >path=/home/luisa/archivos/Disco2.dsk >fit=BF
+fdisk >type=L >unit=k >name=Part27 >size=1536 >path=/home/luisa/archivos/Disco2.dsk >fit=FF
+
+
+#Particiones en el disco 5
+fdisk >type=E >unit=k >name=Part30 >size=5120 >path="/home/luisa/archivos/mis archivos/Disco5.dsk" >fit=BF #5MB
+fdisk >type=L >unit=k >name=Part31 >size=1024 >path="/home/luisa/archivos/mis archivos/Disco5.dsk" >fit=BF
+fdisk >type=P >unit=k >name=Part32 >size=5120 >path="/home/luisa/archivos/mis archivos/Disco5.dsk" >fit=BF
+fdisk >type=L >unit=k >name=Part33 >size=1024 >path="/home/luisa/archivos/mis archivos/Disco5.dsk" >fit=BF
+fdisk >type=P >unit=k >name=Part34 >size=5120 >path="/home/luisa/archivos/mis archivos/Disco5.dsk" >fit=BF
+fdisk >type=L >unit=k >name=Part36 >size=1024 >path="/home/luisa/archivos/mis archivos/Disco5.dsk" >fit=BF
+fdisk >type=L >unit=k >name=Part37 >size=1024 >path="/home/luisa/archivos/mis archivos/Disco5.dsk" >fit=BF

@@ -3,10 +3,10 @@ using namespace std;
 
 typedef struct 
 {
-    char part_status; //Indica si la partición está activa o no A->Activa, I->Inactiva
+    char part_status='0'; //Indica si la partición está activa o no 1->Activa, 0->Inactiva
     char part_type; //P->Primaria E->Extendida
     char part_fit; //B->BestFit F->FirstFit W->WorstFit
-    int part_start; //Indica en qué byte del disco inicia la partición
+    int part_start=0; //Indica en qué byte del disco inicia la partición
     int part_s=0; //Contiene el tamaño de la partición en bytes
     char part_name[16]; //Nombre de la partición
 
@@ -24,9 +24,9 @@ typedef struct
 
 typedef struct 
 {
-    char part_status; //Indica si la partición está activa o no
+    char part_status='0'; //Indica si la partición está activa o no
     char part_fit; //B->BestFit F->FirstFit W->WorstFit
-    int part_start; //Indica en qué byte del disco inicia la partición
+    int part_start=0; //Indica en qué byte del disco inicia la partición
     int part_s=0; //Contiene el tamaño de la partición en bytes
     int part_next=-1; //Byte en el que está el próximo EBR. -1 si no hay siguiente
     char part_name[16]; //Nombre de la partición
