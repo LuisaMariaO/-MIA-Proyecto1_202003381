@@ -1,7 +1,15 @@
 #include <iostream>
 #include <list>
 #include "estructuras.h"
+#include <map>
 using namespace std;
+
+
+/*<rutaDisco,[<id,nombrePartición>]>*/
+//map <string,list<pair<string,string>>> montadas();
+
+const string digitosCarnet = "81"; //202003381
+
 
 void analizar(char *comando);
 bool verify_name(string name);
@@ -27,5 +35,9 @@ void ajustarL(char* ruta, int psize, char name[16], char type, char fit, char ds
 void fdiskDelete(char* ruta, char name[16]);
 void fdiskAdd(char* ruta, char name[16], int add);
 
+void mount(char* parametros);
+void montarParticion(char* ruta, char name[16]);
+string getFileName(string ruta);
+void verMontadas();
 
 void rep();

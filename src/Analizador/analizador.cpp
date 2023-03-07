@@ -8,8 +8,24 @@
 #include <cstdlib>
 //#include "estructuras.h"
 
+/*<id,ruta>*/
+map <string,string> montadas;
+map <string,string>::iterator it;
+
+/*<id,nombreParticion>*/
+map <string, string> nombres;
+
+/*<nombreDisco,ruta>*/
+map <string,string> rutas;
+
+
+//lista.push_back("Hola","Adios");
+//montadas["Hola"] = lista;
+//map <string,list<pair<string,string>>>::iterator it;
+
 /*Funciones que devuelven el tipo y el valor de un parametro en strings ya en lowercase */
 string get_tipo_parametro(string parametro){
+    
     //Iteramos hasta obtener el tipo del parametro
     string tipo = "";
     if(parametro[0]=='#'){
@@ -1325,6 +1341,8 @@ void fdiskAdd(char* ruta, char name[16], int add){
     else{
         cout<<"Error: No se encontró la partición"<<endl;
     }
+
+    fclose(archivo);
 }
 
 void fdisk(char* parametros){
@@ -1539,6 +1557,171 @@ void fdisk(char* parametros){
     cout<<"\n"<<endl;
 }
 
+string getFileName(string ruta){
+  
+    ruta=ruta.substr(ruta.find_last_of("\\/")+1);
+
+    string name = ruta.substr(0,ruta.find_last_of("."));
+
+    return name;
+}
+
+void montarParticion(char* ruta, char name[16]){
+    MBR mbr;
+    bool encontrada = false;
+    FILE *archivo= fopen(ruta,"rb+");
+    fseek(archivo,0,SEEK_SET);
+    fread(&mbr, sizeof(MBR),1,archivo);
+
+
+
+    for(int i=0; i<4; i++){
+        if (strcasecmp(name,mbr.particiones[i].part_name)==0){
+            encontrada=true;
+            break;
+        }
+        if(mbr.particiones[i].part_type=='E'){//Si la partición es extendida, reviso en las particiones lógicas
+            EBR tmp;
+            
+            fseek(archivo,mbr.particiones[i].part_start,SEEK_SET); //Me muevo al inicoi de la partición extendida para leer el EBR
+            fread(&tmp, sizeof(EBR),1,archivo);
+
+            
+
+            if(strcasecmp(name,tmp.part_name)==0){
+                    encontrada=true;
+                    break;
+            }
+
+            while(tmp.part_next!=-1){
+               
+                if(strcasecmp(name,tmp.part_name)==0){
+                    
+                    encontrada=true;
+                    break;
+                }
+                
+                fseek(archivo, tmp.part_next,SEEK_SET);
+                fread(&tmp,sizeof(EBR),1,archivo); //Cambio a a la siguiente partición lógica
+                
+                if(tmp.part_next==-1){
+                    //memcpy(&ultima,&tmp,sizeof(EBR));
+                    if(strcasecmp(name,tmp.part_name)==0){
+                    
+                    encontrada=true;
+                    break;
+                }
+                }
+            }
+        }
+    }
+
+
+    if(encontrada){
+        string id="";
+        id+=digitosCarnet;
+            
+           
+            
+            string nombreDisco = getFileName(ruta);
+            int ult = 0;
+
+            for(it = montadas.begin(); it!=montadas.end(); it++){
+                if(it->second==ruta){
+                    ult++;
+                }
+            }
+            ult++;
+            id+=to_string(ult);
+            id+=nombreDisco;
+            
+            montadas[id] = ruta; //Agrego el par <id,rutaDisco> 
+            nombres[id] = name; //Agrego el par <id,nombreParticion>
+
+           
+           
+            cout<<"Partición <"<<name<<"> montada! ID: "<<id<<endl;
+            //TODO: Hacer prueba con debugger
+        
+    }
+    else{
+        cout<<"Error: No se encontró la partición"<<endl;
+    }
+    fclose(archivo);
+    
+}
+void verMontadas(){
+    if(montadas.size()==0){
+        cout<<"No hay particiones montadas :("<<endl;
+    }
+    else{
+        cout<<"Particiones montadas actualmente"<<endl;
+        for(it=montadas.begin(); it!=montadas.end(); it++){
+            cout<<"-"<<it->first<<endl;
+        }
+    }
+}
+
+void mount(char* parametros){
+    bool fpath=false;
+    bool fname=false;
+    bool finfo = false;
+    parametros = strtok(NULL," ");
+
+    string path;
+    char name[16];
+    while (parametros!=NULL){
+        string tmp = parametros;
+        string tipo = get_tipo_parametro(tmp);
+        string valor = get_valor_parametro(tmp);
+
+        if(tipo==">path"){
+            valor = regresarEspacio(valor);
+            if(existsFile(valor)){
+                path=valor;
+                fpath=true;
+            }
+            else{
+                cout<<"Error: No se encontró el disco duro"<<endl;
+                break;
+            }
+        }
+        else if(tipo==">name"){
+            valor=regresarEspacio(valor);
+            strcpy(name,valor.c_str());
+            fname=true;
+        }
+        else if(tipo==">info"){
+            verMontadas();
+            finfo=true;
+            break;
+        }
+        else if(tipo[0] == '#'){
+            //Si viene un comentario, no pasa nada
+            break;
+        }
+        else{
+            
+            cout<<"Parámetro inválido"<<endl;
+        }
+        parametros = strtok(NULL," ");
+        
+    }
+    //Trabajando con los parámetros
+    if(fname && fpath){
+        char* ruta = new char[path.length()];
+        strcpy(ruta,path.c_str());
+        montarParticion(ruta,name);
+    }
+    else if(finfo){
+        //No pasa nada
+    }
+    else{
+        cout<<"Parámetros insuficientes para realizar una acción"<<endl;
+    }
+    
+}
+
 void rep(){
     ofstream file("rep.dot");
     if(!file){
@@ -1586,6 +1769,9 @@ void analizar(char *comando) {
     }
     else if(strcasecmp(token,"rep")==0){
         rep();
+    }
+    else if(strcasecmp(token,"mount")==0){
+        mount(token);
     }
     else if (token[0]=='#'){
         //Si es un comentario, no pasa nada
