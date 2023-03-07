@@ -1719,7 +1719,62 @@ void mount(char* parametros){
     else{
         cout<<"Parámetros insuficientes para realizar una acción"<<endl;
     }
+    cout<<"\n";
     
+}
+
+void desmontarParticion(string id){
+    it = montadas.find(id);
+    if(it!=montadas.end()){
+        //Si la encuentro, la elimino
+        montadas.erase(it);
+        it=nombres.find(id);
+        if(it!=nombres.end()){
+            nombres.erase(it);
+        }
+        cout<<"¡Partición desmontada!"<<endl;
+
+    }
+    else{
+        cout<<"Error: No se encontró el id"<<endl;
+    }
+}
+
+void unmount(char* parametros){
+    bool fid = false;
+    parametros = strtok(NULL," ");
+
+    string path;
+    string id;
+    while (parametros!=NULL){
+        string tmp = parametros;
+        string tipo = get_tipo_parametro(tmp);
+        string valor = get_valor_parametro(tmp);
+
+        if(tipo==">id"){
+            valor = regresarEspacio(valor);
+            id=valor;
+            fid=true;
+        }
+        else if(tipo[0] == '#'){
+            //Si viene un comentario, no pasa nada
+            break;
+        }
+        else{
+            
+            cout<<"Parámetro inválido"<<endl;
+        }
+        parametros = strtok(NULL," ");
+        
+    }
+    //Trabajando con los parámetros
+    if(fid){
+        desmontarParticion(id);
+    }
+    else{
+        cout<<"Parámetros insuficientes para realizar una acción"<<endl;
+    }
+    cout<<"\n";
 }
 
 void rep(){
@@ -1772,6 +1827,9 @@ void analizar(char *comando) {
     }
     else if(strcasecmp(token,"mount")==0){
         mount(token);
+    }
+    else if(strcasecmp(token,"unmount")==0){
+        unmount(token);
     }
     else if (token[0]=='#'){
         //Si es un comentario, no pasa nada

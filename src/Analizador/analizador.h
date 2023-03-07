@@ -40,4 +40,7 @@ void montarParticion(char* ruta, char name[16]);
 string getFileName(string ruta);
 void verMontadas();
 
+void unmount(char* parametros);
+void desmontarParticion(string id);
+
 void rep();
