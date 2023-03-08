@@ -73,3 +73,5 @@ fdisk >delete=fast >name=Part13 >path=/home/luisa/archivos/Disco2.dk
 fdisk >add=1 >unit=m >path=/home/luisa/archivos/Disco2.dk >name=Part12
 mount >path=/home/luisa/Disco1.dk >name=Part2
 rep >name=mbr >path=/home/luisa/reporte1.jpg >id=811Disco1
+rep >name=mbr >path=/home/luisa/repore1.jpg >id=811Disco1
+rep >name=mbr >path=/home/luisa/reporte2.jpg >id=811Disco1

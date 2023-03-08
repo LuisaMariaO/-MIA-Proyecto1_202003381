@@ -1,6 +1,7 @@
 #include "analizador.h"
 #include <iostream>
 #include <stdio.h>
+#include <string>
 #include <string.h>
 #include <sys/stat.h>
 #include <sys/types.h>
@@ -39,6 +40,14 @@ string get_tipo_parametro(string parametro){
     //devolvemos el string
     return tipo;
 }
+string toLower(string valor){
+    string res ="";
+    for(int i = 0; i<valor.length(); i++){
+        char caracter = tolower(valor.at(i));
+        res = res + caracter;
+    }
+    return res;
+}
 string get_valor_parametro(string parametro){
     //Iteramos hasta obtener el valor del parametro
     string valor = "";
@@ -46,7 +55,8 @@ string get_valor_parametro(string parametro){
     for(int i = 0; i < parametro.length(); i++){
         if(concatenar){
             char caracter = parametro.at(i);
-            valor = valor + caracter;
+            //valor = valor + caracter;
+            valor.push_back(caracter);
         }
         if(parametro.at(i) == '=') concatenar = true;
     }
@@ -1809,8 +1819,13 @@ void rep(){
 */
 void repMbr(string path, string id){
     
-    
-    
+    string colorMbr = "\"#39F91A\"";
+    string colorMbrInfo = "\"#96F686\"";
+    string colorParticion ="\"#7E1DF2\"";
+    string colorParticionInfo = "\"#C99EFC\"";
+    string colorEbr = "\"#F927A9\"";
+    string colorEbrInfo="\"#FA96D4\"";
+    bool graficar=true;
 
     MBR mbr;
     
@@ -1823,6 +1838,7 @@ void repMbr(string path, string id){
     it = montadas.find(id);
     if(it!=montadas.end()){
         //Si la encontró
+      
         rutaS=it->second; //Ruta del disco
         it = nombres.find(id);
         if(it!=nombres.end()){
@@ -1832,21 +1848,21 @@ void repMbr(string path, string id){
     }
     else{
         cout<<"Error: No se encontró el id"<<endl;
-        return;
+        graficar=false;
     }
-
-    char * ruta= new char [rutaS.length()];
-    strcpy(ruta,rutaS.c_str());
+    if(graficar){
+  //  int length = rutaS.length();
+    const char* ruta= rutaS.c_str();
+    //strcpy(ruta,rutaS.c_str());
     
    string rutaDot = getPathWName(path);
-   //TODO: pasar los nombres de los reportes a minúsculas
-   /*
+   
    rutaDot.append("/");
    rutaDot.append(getFileName(path));
    rutaDot.append(".dot");
 
-   
-    ofstream file(rutaDot);
+    const char* rDot = rutaDot.c_str();
+    ofstream file(rDot);
     if(!file){
         cout<<"Error al generar el archivo"<<endl;
         return;
@@ -1860,34 +1876,77 @@ void repMbr(string path, string id){
     file<<"a0[shape=none label=<\n";
     file<<"<TABLE cellspacing=\"0\" cellpadding=\"0\">\n";
     file<<"<TR>\n";
-    file<<"<TD bgcolor=\"#39F91A\"> REPORTE DE MBR</TD>\n";
-    file<<"<TD bgcolor=\"#39F91A\"></TD>\n";
+    file<<"<TD bgcolor=";
+    file<<colorMbr;
+    file<<"> REPORTE DE MBR</TD>\n";
+    file<<"<TD bgcolor=";
+    file<<colorMbr;
+    file<<"></TD>\n";
     file<<"</TR>\n";
     //Comienzo con la información del mbr
     file<<"<TR>\n";
-    file<<"<TD bgcolor=\"#96F686\">mbr_tamanio</TD>\n";
-    file<< "<TD bgcolor=\"#96F686\">"<<to_string(mbr.mbr_tamanio)<<"</TD>\n";
-
-    file<<"</TR>\n";
-    file<<"<TR>\n";
-    file<<"<TD bgcolor=\"#96F686\">mbr_fecha_creacion</TD>\n";
-    file<< "<TD bgcolor=\"#96F686\">" <<to_string(mbr.mbr_fecha_creacion)<<"</TD>\n";
+    file<<"<TD bgcolor="<<colorMbrInfo<<">mbr_tamanio</TD>\n";
+    file<< "<TD bgcolor="<<colorMbrInfo<<">"<<to_string(mbr.mbr_tamanio)<<"</TD>\n";
     file<<"</TR>\n";
 
     file<<"<TR>\n";
-    file<<"<TD bgcolor=\"#96F686\">mbr_dsk_signature</TD>\n";
-    file<< "<TD bgcolor=\"#96F686\">"<<to_string(mbr.mbr_dsk_signature)<<"</TD>\n";
+    file<<"<TD bgcolor="<<colorMbrInfo<<">mbr_fecha_creacion</TD>\n";
+    tm *ltm = localtime(&mbr.mbr_fecha_creacion);
+    file<< "<TD bgcolor="<<colorMbrInfo<<">" <<ltm->tm_mday<<"-"<<(1+ltm->tm_mon)<<"-"<<(1900+ltm->tm_year)<<" "<<(5+ltm->tm_hour)<<":"<<(30+ltm->tm_min)<<":"<<ltm->tm_sec<<"</TD>\n";
     file<<"</TR>\n";
 
     file<<"<TR>\n";
-    file<<"<TD bgcolor=\"#96F686\">mbr_dsk_fit</TD>\n";
-    file<< "<TD bgcolor=\"#96F686\">"<<to_string(mbr.dsk_fit)<<"</TD>\n";
+    file<<"<TD bgcolor="<<colorMbrInfo<<">mbr_dsk_signature</TD>\n";
+    file<< "<TD bgcolor="<<colorMbrInfo<<">"<<to_string(mbr.mbr_dsk_signature)<<"</TD>\n";
+    file<<"</TR>\n";
+
+    file<<"<TR>\n";
+    file<<"<TD bgcolor="<<colorMbrInfo<<">mbr_dsk_fit</TD>\n";
+    file<< "<TD bgcolor="<<colorMbrInfo<<">"<<mbr.dsk_fit<<"</TD>\n";
     file<<"</TR>\n";
 
 
     for(int i=0; i<4; i++){
         //Código para graficar la partición
+        file<<"<TR>\n";
+        file<<"<TD bgcolor="<<colorParticion<<">Partición</TD>\n";
+        file<< "<TD bgcolor="<<colorParticion<<">"<<"</TD>\n";
+        file<<"</TR>\n";
+
+        file<<"<TR>\n";
+        file<<"<TD bgcolor="<<colorParticionInfo<<">part_status</TD>\n";
+        file<< "<TD bgcolor="<<colorParticionInfo<<">"<<mbr.particiones[i].part_status<<"</TD>\n";
+        file<<"</TR>\n";       
+
+        file<<"<TR>\n";
+        file<<"<TD bgcolor="<<colorParticionInfo<<">part_type</TD>\n";
+        file<< "<TD bgcolor="<<colorParticionInfo<<">"<<mbr.particiones[i].part_type<<"</TD>\n";
+        file<<"</TR>\n";
+
+        file<<"<TR>\n";
+        file<<"<TD bgcolor="<<colorParticionInfo<<">part_fit</TD>\n";
+        file<< "<TD bgcolor="<<colorParticionInfo<<">"<<mbr.particiones[i].part_fit<<"</TD>\n";
+        file<<"</TR>\n";  
+
+        file<<"<TR>\n";
+        file<<"<TD bgcolor="<<colorParticionInfo<<">part_start</TD>\n";
+        file<< "<TD bgcolor="<<colorParticionInfo<<">"<<to_string(mbr.particiones[i].part_start)<<"</TD>\n";
+        file<<"</TR>\n";  
+
+        file<<"<TR>\n";
+        file<<"<TD bgcolor="<<colorParticionInfo<<">part_s</TD>\n";
+        file<< "<TD bgcolor="<<colorParticionInfo<<">"<<to_string(mbr.particiones[i].part_s)<<"</TD>\n";
+        file<<"</TR>\n";
+
+        file<<"<TR>\n";
+        file<<"<TD bgcolor="<<colorParticionInfo<<">part_name</TD>\n";
+        file<< "<TD bgcolor="<<colorParticionInfo<<">"<<mbr.particiones[i].part_name<<"</TD>\n";
+        file<<"</TR>\n";  
+
         if(mbr.particiones[i].part_type=='E'){//Si la partición es extendida, reviso en las particiones lógicas
+
+
+
             EBR tmp;
             
             fseek(archivo,mbr.particiones[i].part_start,SEEK_SET); //Me muevo al inicoi de la partición extendida para leer el EBR
@@ -1897,12 +1956,79 @@ void repMbr(string path, string id){
             while(tmp.part_next!=-1){
                //Código para graficar esta partición
                 
-               
+                file<<"<TR>\n";
+                file<<"<TD bgcolor="<<colorEbr<<">Partición Lógica</TD>\n";
+                file<< "<TD bgcolor="<<colorEbr<<">"<<"</TD>\n";
+                file<<"</TR>\n";
+
+                file<<"<TR>\n";
+                file<<"<TD bgcolor="<<colorEbrInfo<<">part_status</TD>\n";
+                file<< "<TD bgcolor="<<colorEbrInfo<<">"<<tmp.part_status<<"</TD>\n";
+                file<<"</TR>\n";       
+
+                file<<"<TR>\n";
+                file<<"<TD bgcolor="<<colorEbrInfo<<">part_fit</TD>\n";
+                file<< "<TD bgcolor="<<colorEbrInfo<<">"<<tmp.part_fit<<"</TD>\n";
+                file<<"</TR>\n";  
+
+                file<<"<TR>\n";
+                file<<"<TD bgcolor="<<colorEbrInfo<<">part_start</TD>\n";
+                file<< "<TD bgcolor="<<colorEbrInfo<<">"<<to_string(tmp.part_start)<<"</TD>\n";
+                file<<"</TR>\n";  
+
+                file<<"<TR>\n";
+                file<<"<TD bgcolor="<<colorEbrInfo<<">part_s</TD>\n";
+                file<< "<TD bgcolor="<<colorEbrInfo<<">"<<to_string(tmp.part_s)<<"</TD>\n";
+                file<<"</TR>\n";
+
+                file<<"<TR>\n";
+                file<<"<TD bgcolor="<<colorEbrInfo<<">part_next</TD>\n";
+                file<< "<TD bgcolor="<<colorEbrInfo<<">"<<to_string(tmp.part_next)<<"</TD>\n";
+                file<<"</TR>\n";
+
+                file<<"<TR>\n";
+                file<<"<TD bgcolor="<<colorEbrInfo<<">part_name</TD>\n";
+                file<< "<TD bgcolor="<<colorEbrInfo<<">"<<tmp.part_name<<"</TD>\n";
+                file<<"</TR>\n";  
                 fseek(archivo, tmp.part_next,SEEK_SET);
                 fread(&tmp,sizeof(EBR),1,archivo); //Cambio a a la siguiente partición lógica
                 
                 if(tmp.part_next==-1){
                     //Código para graficar la última partición lógica
+                    file<<"<TR>\n";
+                    file<<"<TD bgcolor="<<colorEbr<<">Partición Lógica</TD>\n";
+                    file<< "<TD bgcolor="<<colorEbr<<">"<<"</TD>\n";
+                    file<<"</TR>\n";
+
+                    file<<"<TR>\n";
+                    file<<"<TD bgcolor="<<colorEbrInfo<<">part_status</TD>\n";
+                    file<< "<TD bgcolor="<<colorEbrInfo<<">"<<tmp.part_status<<"</TD>\n";
+                    file<<"</TR>\n";       
+
+                    file<<"<TR>\n";
+                    file<<"<TD bgcolor="<<colorEbrInfo<<">part_fit</TD>\n";
+                    file<< "<TD bgcolor="<<colorEbrInfo<<">"<<tmp.part_fit<<"</TD>\n";
+                    file<<"</TR>\n";  
+
+                    file<<"<TR>\n";
+                    file<<"<TD bgcolor="<<colorEbrInfo<<">part_start</TD>\n";
+                    file<< "<TD bgcolor="<<colorEbrInfo<<">"<<to_string(tmp.part_start)<<"</TD>\n";
+                    file<<"</TR>\n";  
+
+                    file<<"<TR>\n";
+                    file<<"<TD bgcolor="<<colorEbrInfo<<">part_s</TD>\n";
+                    file<< "<TD bgcolor="<<colorEbrInfo<<">"<<to_string(tmp.part_s)<<"</TD>\n";
+                    file<<"</TR>\n";
+
+                    file<<"<TR>\n";
+                    file<<"<TD bgcolor="<<colorEbrInfo<<">part_next</TD>\n";
+                    file<< "<TD bgcolor="<<colorEbrInfo<<">"<<to_string(tmp.part_next)<<"</TD>\n";
+                    file<<"</TR>\n";
+
+                    file<<"<TR>\n";
+                    file<<"<TD bgcolor="<<colorEbrInfo<<">part_name</TD>\n";
+                    file<< "<TD bgcolor="<<colorEbrInfo<<">"<<tmp.part_name<<"</TD>\n";
+                    file<<"</TR>\n";  
                 }
                 }
             }
@@ -1915,26 +2041,27 @@ void repMbr(string path, string id){
     file<<"}\n";
 
     file.close(); //Ciero el archivo
-    //string nombreA = getFileName(path);
-    //string rutaA = getPathWName(path);
-    //string comando = "dot -Tjpg ";
-    //comando+=rutaDot;
-    //comando+=" -o ";
-    //comando+=rutaA;
-    //comando+="/";
-    //comando+=nombreA;
-    //comando+=".jpg";
-    //char* comandoc = new char[comando.length()+1];
-    //strcpy(comandoc,comando.c_str());
-   // system(comandoc);
-    //system("dot -Tjpg "+path +"-o "+nombreA); 
-    */
+    string nombreA = getFileName(path);
+    string rutaA = getPathWName(path);
+    string comando = "dot -Tjpg ";
+    comando+=rutaDot;
+    comando+=" -o ";
+    comando+=rutaA;
+    comando+="/";
+    comando+=nombreA;
+    comando+=".jpg";
+    char* comandoc = new char[comando.length()];
+    strcpy(comandoc,comando.c_str());
+    system(comandoc);
+   // system("dot -Tjpg "+path +"-o "+nombreA); 
+    
     cout<<"¡Reporte generado con éxito!"<<endl;
+    }
+    else{
+        cout<<"Error: No se puede graficar el reporte"<<endl;
+    }
 }
 void rep(char* parametros){
-    
-    parametros = strtok(NULL," ");
-
     bool fname=false;
     bool fpath = false;
     bool fid=false;
@@ -1943,62 +2070,55 @@ void rep(char* parametros){
     string name;
     string path;
     string id;
-    string ruta;
+    parametros = strtok(NULL," ");
     while (parametros!=NULL){
         string tmp = parametros;
         string tipo = get_tipo_parametro(tmp);
         string valor = get_valor_parametro(tmp);
-
         if(tipo==">name"){
-            
-            if(valor=="mbr"){
-                name = valor;
-                fname = true;
-            }
-           
-            
-            else{
-                cout<<"Error: Nombre de reporte inválido"<<endl;
-                break;
-            }
-
-            
+            name=valor;
+            fname=true;
         }
-
         else if(tipo==">path"){
-            valor=regresarEspacio(valor);
-            verifyDirectory(valor); //Verifico si ya existe el directorio para crearlo
+            valor = regresarEspacio(valor);
             path=valor;
             fpath=true;
-
         }
         else if(tipo==">id"){
-            valor = regresarEspacio(valor);
             id=valor;
             fid=true;
         }
+
         else if(tipo==">ruta"){
-            valor = regresarEspacio(valor);
-            ruta=valor;
             fruta=true;
         }
-        else if(tipo[0] == '#'){
-            //Si viene un comentario, no pasa nada
+        else if(tipo[0]=='#'){
+            //Si viene un comentario deja de leer
             break;
         }
         else{
-            
-            cout<<"Parámetro inválido"<<endl;
+            cout<<"Error: Parámetro no válido"<<endl;
         }
         parametros = strtok(NULL," ");
         
     }
     //Trabajando con los parámetros
     if(fname && fpath && fid){
+        int length = name.length();
+        const char* namec = name.c_str();
+        //strcpy(namec,name.c_str());
+        if(strcasecmp(namec,"mbr")==0){
+            repMbr(path,id);
+        }
+        else{
+            cout<<"Error: Nombre de reporte inválido"<<endl;
+        }
+        //name = toLower(name);
        
-            if(name=="mbr"){
-                repMbr(path,id);
-            }
+            //if(name=="mbr"){
+                //repMbr(path,id);
+              //  cout<<"ReporteMBR"<<endl;
+            //}
             
     }
     else{
