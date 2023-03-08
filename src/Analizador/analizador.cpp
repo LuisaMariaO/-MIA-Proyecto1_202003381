@@ -100,6 +100,11 @@ string regresarEspacio(string ruta){
     return ruta;
 }
 
+string getPathWName(string path){
+    path = path.substr(0,path.find_last_of("\\/"));
+    return path;
+}
+
 void verifyDirectory (string ruta){
     
     ruta=ruta.substr(0, ruta.find_last_of("\\/"));
@@ -1776,7 +1781,7 @@ void unmount(char* parametros){
     }
     cout<<"\n";
 }
-
+/*
 void rep(){
     ofstream file("rep.dot");
     if(!file){
@@ -1801,7 +1806,206 @@ void rep(){
 
 
 }
+*/
+void repMbr(string path, string id){
+    
+    
+    
 
+    MBR mbr;
+    
+    
+    string rutaS;
+    string nameS;
+    
+
+    //Primero reviso si el id de la partición existe
+    it = montadas.find(id);
+    if(it!=montadas.end()){
+        //Si la encontró
+        rutaS=it->second; //Ruta del disco
+        it = nombres.find(id);
+        if(it!=nombres.end()){
+            nameS = it->second; //Nombre de la partición
+        }
+
+    }
+    else{
+        cout<<"Error: No se encontró el id"<<endl;
+        return;
+    }
+
+    char * ruta= new char [rutaS.length()];
+    strcpy(ruta,rutaS.c_str());
+    
+   string rutaDot = getPathWName(path);
+   //TODO: pasar los nombres de los reportes a minúsculas
+   /*
+   rutaDot.append("/");
+   rutaDot.append(getFileName(path));
+   rutaDot.append(".dot");
+
+   
+    ofstream file(rutaDot);
+    if(!file){
+        cout<<"Error al generar el archivo"<<endl;
+        return;
+    }
+    FILE *archivo= fopen(ruta,"rb+");
+    fseek(archivo,0,SEEK_SET);
+    fread(&mbr, sizeof(MBR),1,archivo);
+
+
+    file<<"digraph G {\n";
+    file<<"a0[shape=none label=<\n";
+    file<<"<TABLE cellspacing=\"0\" cellpadding=\"0\">\n";
+    file<<"<TR>\n";
+    file<<"<TD bgcolor=\"#39F91A\"> REPORTE DE MBR</TD>\n";
+    file<<"<TD bgcolor=\"#39F91A\"></TD>\n";
+    file<<"</TR>\n";
+    //Comienzo con la información del mbr
+    file<<"<TR>\n";
+    file<<"<TD bgcolor=\"#96F686\">mbr_tamanio</TD>\n";
+    file<< "<TD bgcolor=\"#96F686\">"<<to_string(mbr.mbr_tamanio)<<"</TD>\n";
+
+    file<<"</TR>\n";
+    file<<"<TR>\n";
+    file<<"<TD bgcolor=\"#96F686\">mbr_fecha_creacion</TD>\n";
+    file<< "<TD bgcolor=\"#96F686\">" <<to_string(mbr.mbr_fecha_creacion)<<"</TD>\n";
+    file<<"</TR>\n";
+
+    file<<"<TR>\n";
+    file<<"<TD bgcolor=\"#96F686\">mbr_dsk_signature</TD>\n";
+    file<< "<TD bgcolor=\"#96F686\">"<<to_string(mbr.mbr_dsk_signature)<<"</TD>\n";
+    file<<"</TR>\n";
+
+    file<<"<TR>\n";
+    file<<"<TD bgcolor=\"#96F686\">mbr_dsk_fit</TD>\n";
+    file<< "<TD bgcolor=\"#96F686\">"<<to_string(mbr.dsk_fit)<<"</TD>\n";
+    file<<"</TR>\n";
+
+
+    for(int i=0; i<4; i++){
+        //Código para graficar la partición
+        if(mbr.particiones[i].part_type=='E'){//Si la partición es extendida, reviso en las particiones lógicas
+            EBR tmp;
+            
+            fseek(archivo,mbr.particiones[i].part_start,SEEK_SET); //Me muevo al inicoi de la partición extendida para leer el EBR
+            fread(&tmp, sizeof(EBR),1,archivo);
+
+
+            while(tmp.part_next!=-1){
+               //Código para graficar esta partición
+                
+               
+                fseek(archivo, tmp.part_next,SEEK_SET);
+                fread(&tmp,sizeof(EBR),1,archivo); //Cambio a a la siguiente partición lógica
+                
+                if(tmp.part_next==-1){
+                    //Código para graficar la última partición lógica
+                }
+                }
+            }
+        }
+    
+    fclose(archivo);
+
+    file<<"</TABLE>\n";
+    file<<">]\n";
+    file<<"}\n";
+
+    file.close(); //Ciero el archivo
+    //string nombreA = getFileName(path);
+    //string rutaA = getPathWName(path);
+    //string comando = "dot -Tjpg ";
+    //comando+=rutaDot;
+    //comando+=" -o ";
+    //comando+=rutaA;
+    //comando+="/";
+    //comando+=nombreA;
+    //comando+=".jpg";
+    //char* comandoc = new char[comando.length()+1];
+    //strcpy(comandoc,comando.c_str());
+   // system(comandoc);
+    //system("dot -Tjpg "+path +"-o "+nombreA); 
+    */
+    cout<<"¡Reporte generado con éxito!"<<endl;
+}
+void rep(char* parametros){
+    
+    parametros = strtok(NULL," ");
+
+    bool fname=false;
+    bool fpath = false;
+    bool fid=false;
+    bool fruta=false;
+
+    string name;
+    string path;
+    string id;
+    string ruta;
+    while (parametros!=NULL){
+        string tmp = parametros;
+        string tipo = get_tipo_parametro(tmp);
+        string valor = get_valor_parametro(tmp);
+
+        if(tipo==">name"){
+            
+            if(valor=="mbr"){
+                name = valor;
+                fname = true;
+            }
+           
+            
+            else{
+                cout<<"Error: Nombre de reporte inválido"<<endl;
+                break;
+            }
+
+            
+        }
+
+        else if(tipo==">path"){
+            valor=regresarEspacio(valor);
+            verifyDirectory(valor); //Verifico si ya existe el directorio para crearlo
+            path=valor;
+            fpath=true;
+
+        }
+        else if(tipo==">id"){
+            valor = regresarEspacio(valor);
+            id=valor;
+            fid=true;
+        }
+        else if(tipo==">ruta"){
+            valor = regresarEspacio(valor);
+            ruta=valor;
+            fruta=true;
+        }
+        else if(tipo[0] == '#'){
+            //Si viene un comentario, no pasa nada
+            break;
+        }
+        else{
+            
+            cout<<"Parámetro inválido"<<endl;
+        }
+        parametros = strtok(NULL," ");
+        
+    }
+    //Trabajando con los parámetros
+    if(fname && fpath && fid){
+       
+            if(name=="mbr"){
+                repMbr(path,id);
+            }
+            
+    }
+    else{
+        cout<<"Parámetros insuficientes para realizar una acción"<<endl;
+    }
+    cout<<"\n";
+}
 
 /*Funcion que define que comando es el que hay que ejecutar*/
 void analizar(char *comando) {
@@ -1822,8 +2026,9 @@ void analizar(char *comando) {
     else if(strcasecmp(token,"fdisk")==0){
         fdisk(token);
     }
+
     else if(strcasecmp(token,"rep")==0){
-        rep();
+        rep(token);
     }
     else if(strcasecmp(token,"mount")==0){
         mount(token);

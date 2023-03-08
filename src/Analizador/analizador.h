@@ -43,4 +43,8 @@ void verMontadas();
 void unmount(char* parametros);
 void desmontarParticion(string id);
 
+void rep(char* parametros);
+void repMbr(string path, string id);
+string getPathWName(string path);
+
 void rep();
