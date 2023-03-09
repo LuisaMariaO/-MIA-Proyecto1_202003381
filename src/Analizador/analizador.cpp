@@ -1448,11 +1448,11 @@ void fdisk(char* parametros){
                 ffit=true;
             }
             else if(strcasecmp(aj,"ff")==0){
-                ffit='F';
+                fit='F';
                 ffit=true;
             }
             else if(strcasecmp(aj,"wf")==0){
-                ffit='W';
+                fit='W';
                 ffit=true;
             }
             else{
@@ -1656,7 +1656,7 @@ void montarParticion(char* ruta, char name[16]){
            
            
             cout<<"Partición <"<<name<<"> montada! ID: "<<id<<endl;
-            //TODO: Hacer prueba con debugger
+        
         
     }
     else{
@@ -1892,7 +1892,7 @@ void repMbr(string path, string id){
     file<<"<TR>\n";
     file<<"<TD bgcolor="<<colorMbrInfo<<">mbr_fecha_creacion</TD>\n";
     tm *ltm = localtime(&mbr.mbr_fecha_creacion);
-    file<< "<TD bgcolor="<<colorMbrInfo<<">" <<ltm->tm_mday<<"-"<<(1+ltm->tm_mon)<<"-"<<(1900+ltm->tm_year)<<" "<<(5+ltm->tm_hour)<<":"<<(30+ltm->tm_min)<<":"<<ltm->tm_sec<<"</TD>\n";
+    file<< "<TD bgcolor="<<colorMbrInfo<<">" <<ltm->tm_mday<<"-"<<(1+ltm->tm_mon)<<"-"<<(1900+ltm->tm_year)<<" "<<(ltm->tm_hour)<<":"<<(ltm->tm_min)<<":"<<ltm->tm_sec<<"</TD>\n";
     file<<"</TR>\n";
 
     file<<"<TR>\n";
@@ -1905,9 +1905,17 @@ void repMbr(string path, string id){
     file<< "<TD bgcolor="<<colorMbrInfo<<">"<<mbr.dsk_fit<<"</TD>\n";
     file<<"</TR>\n";
 
+    
 
     for(int i=0; i<4; i++){
-        //Código para graficar la partición
+        //Código para graficar la particiónes
+        
+        if(mbr.particiones[i].part_status=='0'){
+            strcpy(mbr.particiones[i].part_name,"Libre");
+            mbr.particiones[i].part_type='0';
+            mbr.particiones[i].part_fit='0';
+
+        }
         file<<"<TR>\n";
         file<<"<TD bgcolor="<<colorParticion<<">Partición</TD>\n";
         file<< "<TD bgcolor="<<colorParticion<<">"<<"</TD>\n";
@@ -2053,7 +2061,213 @@ void repMbr(string path, string id){
     char* comandoc = new char[comando.length()];
     strcpy(comandoc,comando.c_str());
     system(comandoc);
-   // system("dot -Tjpg "+path +"-o "+nombreA); 
+    
+    cout<<"¡Reporte generado con éxito!"<<endl;
+    }
+    else{
+        cout<<"Error: No se puede graficar el reporte"<<endl;
+    }
+}
+
+void repDisk(string path, string id){
+    string colorMbr = "\"#39F91A\"";
+    string colorMbrInfo = "\"#96F686\"";
+    string colorParticion ="\"#7E1DF2\"";
+    string colorParticionInfo = "\"#C99EFC\"";
+    string colorEbr = "\"#F927A9\"";
+    string colorEbrInfo="\"#FA96D4\"";
+    string colorLibre="\"#D3D3D3\"";
+    bool graficar=true;
+
+    MBR mbr;
+    
+    
+    string rutaS;
+    string nameS;
+    
+
+    //Primero reviso si el id de la partición existe
+    it = montadas.find(id);
+    if(it!=montadas.end()){
+        //Si la encontró
+      
+        rutaS=it->second; //Ruta del disco
+        it = nombres.find(id);
+        if(it!=nombres.end()){
+            nameS = it->second; //Nombre de la partición
+        }
+
+    }
+    else{
+        cout<<"Error: No se encontró el id"<<endl;
+        graficar=false;
+    }
+    if(graficar){
+
+    const char* ruta= rutaS.c_str();
+
+    
+   string rutaDot = getPathWName(path);
+   
+   rutaDot.append("/");
+   rutaDot.append(getFileName(path));
+   rutaDot.append(".dot");
+
+    const char* rDot = rutaDot.c_str();
+    ofstream file(rDot);
+    if(!file){
+        cout<<"Error al generar el archivo"<<endl;
+        return;
+    }
+    FILE *archivo= fopen(ruta,"rb+");
+    fseek(archivo,0,SEEK_SET);
+    fread(&mbr, sizeof(MBR),1,archivo);
+
+
+    file<<"digraph G {\n";
+    file<<"a0[shape=none label=<\n";
+    file<<"<TABLE cellspacing=\"1\" cellpadding=\"0\">\n";
+    file<<"<TR>\n";
+    file<<"<TD bgcolor=";
+    file<<colorMbr;
+    file<<"> MBR </TD>\n";
+    
+
+    int porcentaje;
+    int libre;
+    float calc;
+    int ocupado=0;
+    for(int i=0; i<4; i++){
+        //Código para graficar la partición
+        ocupado+=mbr.particiones[i].part_s;
+        if(mbr.particiones[i].part_type=='E' && mbr.particiones[i].part_status=='1'){//Si la partición es extendida, reviso en las particiones lógicas
+            file<<"<TD>\n";
+            file<<"\n";
+            file<<"<TABLE cellspacing=\"1\" cellpadding=\"0\">\n";
+            file<<"<TR>\n";
+            file<<"<TD color=\"#FFFFFF\">Extendida</TD>\n";
+            file<<"</TR>\n";
+           
+
+
+            EBR tmp;
+            
+            fseek(archivo,mbr.particiones[i].part_start,SEEK_SET); //Me muevo al inicoi de la partición extendida para leer el EBR
+            fread(&tmp, sizeof(EBR),1,archivo);
+
+            if(tmp.part_next==-1){
+                file<<"<TR>\n";
+                file<<"<TD bgcolor="<<colorEbr<<">EBR</TD>\n";
+
+                libre = mbr.particiones[i].part_s;
+
+                calc = 1*libre;
+                calc = calc/mbr.mbr_tamanio;
+                calc*=100;
+                porcentaje = floor(calc);
+                if(libre>0){
+                    file<<"<TD bgcolor="<<colorLibre<<">Libre <BR></BR> "<<to_string(porcentaje)<<"% del disco</TD>\n";
+                }
+
+
+            }
+            else{
+                 file<<"<TR>\n";
+            }
+
+
+            while(tmp.part_next!=-1){
+               //Código para graficar esta partición
+                file<<"<TD bgcolor="<<colorEbr<<">EBR</TD>\n";
+                calc = 1* tmp.part_s;
+                calc = calc/mbr.mbr_tamanio;
+                calc*=100;
+                porcentaje = floor(calc);
+                file<<"<TD bgcolor="<<colorEbrInfo<<">Lógica <BR></BR> "<<to_string(porcentaje)<<"% del disco</TD>\n";
+                
+                fseek(archivo, tmp.part_next,SEEK_SET);
+                fread(&tmp,sizeof(EBR),1,archivo); //Cambio a a la siguiente partición lógica
+                
+                if(tmp.part_next==-1){
+                    //Código para graficar la última partición lógica
+                    file<<"<TD bgcolor="<<colorEbr<<">EBR</TD>\n";
+                    calc = 1* tmp.part_s;
+                    calc = calc/mbr.mbr_tamanio;
+                    calc*=100;
+                    porcentaje = floor(calc);
+                    file<<"<TD bgcolor="<<colorEbrInfo<<">Lógica <BR></BR> "<<to_string(porcentaje)<<"% del disco</TD>\n";
+
+                    //Ahora reviso si hay espacio libre al final de la extendida
+                    libre = (mbr.particiones[i].part_start + mbr.particiones[i].part_s) - (tmp.part_start+tmp.part_s);
+
+                    calc = 1*libre;
+                    calc = calc/mbr.mbr_tamanio;
+                    calc*=100;
+                    porcentaje = floor(calc);
+                    if(libre>0){
+                        file<<"<TD bgcolor="<<colorLibre<<">Libre <BR></BR> "<<to_string(porcentaje)<<"% del disco</TD>\n";
+                    }
+                }
+                }
+
+                file<<"</TR>\n";
+                file<<"</TABLE>\n";
+                file<<"</TD>\n";
+            }
+            else{
+                if(mbr.particiones[i].part_status=='0'){ //Si la partición no está siendo usada
+                libre = mbr.particiones[i].part_s;
+                calc = 1*libre;
+                calc = calc/mbr.mbr_tamanio;
+                calc*=100;
+                porcentaje = floor(calc);
+            
+                file<<"<TD bgcolor="<<colorLibre<<">Libre <BR></BR> "<<to_string(porcentaje)<<"% del disco</TD>\n";
+
+                }
+                else{
+                    calc = 1*mbr.particiones[i].part_s;
+                    calc =calc/mbr.mbr_tamanio;
+                    calc*=100;
+                    porcentaje = floor(calc);
+                    
+                    file<<"<TD bgcolor="<<colorParticion<<">Primaria <BR></BR> "<<to_string(porcentaje)<<"% del disco</TD>\n";
+
+                }
+            }
+        }
+
+    //Ahora verifico si hay espacio libre al final del disco
+        
+                libre = mbr.mbr_tamanio-(ocupado);
+                if(libre>0){
+                calc = 1*libre;
+                calc = calc/mbr.mbr_tamanio;
+                calc*=100;
+                porcentaje = floor(calc);
+            
+                file<<"<TD bgcolor="<<colorLibre<<">Libre <BR></BR> "<<to_string(porcentaje)<<"% del disco</TD>\n";
+                }
+    fclose(archivo);
+    file<<"</TR>\n";
+    file<<"</TABLE>\n";
+    file<<">]\n";
+    file<<"label=\""<<getFileName(rutaS)<<".dsk\"";
+    file<<"}\n";
+
+    file.close(); //Ciero el archivo
+    string nombreA = getFileName(path);
+    string rutaA = getPathWName(path);
+    string comando = "dot -Tjpg ";
+    comando+=rutaDot;
+    comando+=" -o ";
+    comando+=rutaA;
+    comando+="/";
+    comando+=nombreA;
+    comando+=".jpg";
+    char* comandoc = new char[comando.length()];
+    strcpy(comandoc,comando.c_str());
+    system(comandoc);
     
     cout<<"¡Reporte generado con éxito!"<<endl;
     }
@@ -2081,6 +2295,7 @@ void rep(char* parametros){
         }
         else if(tipo==">path"){
             valor = regresarEspacio(valor);
+            verifyDirectory(valor); //Veo si es necesario crear un directorio
             path=valor;
             fpath=true;
         }
@@ -2109,6 +2324,9 @@ void rep(char* parametros){
         //strcpy(namec,name.c_str());
         if(strcasecmp(namec,"mbr")==0){
             repMbr(path,id);
+        }
+        else if(strcasecmp(namec,"disk")==0){
+            repDisk(path,id);
         }
         else{
             cout<<"Error: Nombre de reporte inválido"<<endl;

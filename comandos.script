@@ -1,64 +1,64 @@
 #CREACION DE DISCOS
 
 mkdisk >size=50 >unit=M >path="/home/luisa/archivos/Disco1.dk" >fit=ff
-mkdisk >unit=k >size=51200 >path=/home/luisa/archivos/Disco2.dk >f=bf
+mkdisk >unit=k >size=51200 >path=/home/luisa/archivos/Disco2.dk >fit=bf
 mkDisk >size=10 >path=/home/luisa/archivos/Disco3.dk
 mkdisk >size=51200 >path="/home/luisa/archivos/mis archivos/Disco4.dk" >unit=K
-mkDisk >size=20 >path="/home/luisa/archivos/mis archivos/Disco5.dk" >unit=M >f=WF
+mkDisk >size=20 >path="/home/luisa/archivos/mis archivos/Disco5.dk" >unit=M >fit=WF
 
 #Deberia dar error
 mkdisk >param=x >size=30 >path=/home/luisa/archivos/Disco.dk
 
 #ELIMINACION DE DISCOS
 #El primero deberia dar error
-rmDisk >path=/home/luisa/Disco3.dk
+rmDisk >path=/home/luisa/archivos/Disco3.dk
 rmDisk >path=/home/luisa/archivos/Disco3.dk
 RMDISK >path="/home/luisa/archivos/mis archivos/Disco4.dk"
 
 #CREACION DE PARTICIONES
 #Particiones en el disco1
-fdisk >type=P >unit=K >name=Part1 >size=7680 >path=/home/luisa/archivos/Disco1.dk >f=BF #7.5 MB
-fdisk >type=E >unit=K >name=Part2 >size=7680 >path=/home/luisa/archivos/Disco1.dk >f=FF
-fdisk >type=E >unit=K >name=Part3 >size=7680 >path=/home/luisa/archivos/Disco1.dk >f=WF #Deberia dar error
-fdisk >type=P >unit=K >name=Part3 >size=7680 >path=/home/luisa/archivos/Disco1.dk >f=WF
-fdisk >type=P >unit=K >name=Part4 >size=7680 >path=/home/luisa/archivos/Disco1.dk >f=BF
-FDISK >type=L >unit=k >name=Part5 >size=1280 >path=/home/luisa/archivos/Disco1.dk >f=BF #1.25 MB
-fdisk >type=L >unit=K >name=Part6 >size=1280 >path=/home/luisa/archivos/Disco1.dk >f=WF
-fdisk >type=L >unit=K >name=Part7 >size=1280 >path=/home/luisa/archivos/Disco1.dk >f=wf
-fdisk >type=L >unit=K >name=Part8 >size=1280 >path=/home/luisa/archivos/Disco1.dk >f=ff
-fdisk >type=L >unit=K >name=Part9 >size=1280 >path=/home/luisa/archivos/Disco1.dk >f=bf
-fdisk >type=L >unit=K >name=Part9 >size=1024 >path=/home/luisa/archivos/Disco1.dk >f=BF #ERROR nombre 
+fdisk >type=P >unit=K >name=Part1 >size=7680 >path=/home/luisa/archivos/Disco1.dk >fit=BF #7.5 MB
+fdisk >type=E >unit=K >name=Part2 >size=7680 >path=/home/luisa/archivos/Disco1.dk >fit=FF
+fdisk >type=E >unit=K >name=Part3 >size=7680 >path=/home/luisa/archivos/Disco1.dk >fit=WF #Deberia dar error
+fdisk >type=P >unit=K >name=Part3 >size=7680 >path=/home/luisa/archivos/Disco1.dk >fit=WF
+fdisk >type=P >unit=K >name=Part4 >size=7680 >path=/home/luisa/archivos/Disco1.dk >fit=BF
+FDISK >type=L >unit=k >name=Part5 >size=1280 >path=/home/luisa/archivos/Disco1.dk >fit=BF #1.25 MB
+fdisk >type=L >unit=K >name=Part6 >size=1280 >path=/home/luisa/archivos/Disco1.dk >fit=WF
+fdisk >type=L >unit=K >name=Part7 >size=1280 >path=/home/luisa/archivos/Disco1.dk >fit=wf
+fdisk >type=L >unit=K >name=Part8 >size=1280 >path=/home/luisa/archivos/Disco1.dk >fit=ff
+fdisk >type=L >unit=K >name=Part9 >size=1280 >path=/home/luisa/archivos/Disco1.dk >fit=bf
+fdisk >type=L >unit=K >name=Part9 >size=1024 >path=/home/luisa/archivos/Disco1.dk >fit=BF #ERROR nombre 
 
 #Particiones en el disco2
-fdisk >type=L >unit=k >name=Part11 >size=10240 >path=/home/luisa/archivos/Disco2.dk >f=BF #ERRROR no hay una extendida
-fdisk >type=L >unit=k >name=Part12 >size=10240 >path=/home/luisa/archivos/Disco2.dk >f=BF #ERRROR no hay una extendida
-fDisk >type=P >unit=K >name=Part11 >size=10240 >path=/home/luisa/archivos/Disco2.dk >f=BF #10 MB
-fDisk >type=P >unit=m >name=Part12 >size=5 >path=/home/luisa/archivos/Disco2.dk >f=FF #5MB
-fDisk >type=P >unit=K >name=Part13 >size=5120 >path=/home/luisa/archivos/Disco2.dk >f=WF #5 MB
+fdisk >type=L >unit=k >name=Part11 >size=10240 >path=/home/luisa/archivos/Disco2.dk >fit=BF #ERRROR no hay una extendida
+fdisk >type=L >unit=k >name=Part12 >size=10240 >path=/home/luisa/archivos/Disco2.dk >fit=BF #ERRROR no hay una extendida
+fDisk >type=P >unit=K >name=Part11 >size=10240 >path=/home/luisa/archivos/Disco2.dk >fit=BF #10 MB
+fDisk >type=P >unit=m >name=Part12 >size=5 >path=/home/luisa/archivos/Disco2.dk >fit=FF #5MB
+fDisk >type=P >unit=K >name=Part13 >size=5120 >path=/home/luisa/archivos/Disco2.dk >fit=WF #5 MB
 fdisk >type=E >unit=m >name=Part14 >size=20 >path=/home/luisa/archivos/Disco2.dk #20 MB
 fdisk >type=L >unit=k >name=Part15 >size=1536 >path=/home/luisa/archivos/Disco2.dk #1.5 MB
-fdisk >type=L >unit=k >name=Part16 >size=1536 >path=/home/luisa/archivos/Disco2.dk >f=BF
-fdisk >type=L >unit=k >name=Part17 >size=1536 >path=/home/luisa/archivos/Disco2.dk >f=FF
-fdisk >type=L >unit=k >name=Part18 >size=1536 >path=/home/luisa/archivos/Disco2.dk >f=BF
-fdisk >type=L >unit=k >name=Part19 >size=1536 >path=/home/luisa/archivos/Disco2.dk >f=WF
-fdisk >type=L >unit=k >name=Part20 >size=1536 >path=/home/luisa/archivos/Disco2.dk >f=BF
-fdisk >type=L >unit=k >name=Part21 >size=1536 >path=/home/luisa/archivos/Disco2.dk >f=FF
-fdisk >type=L >unit=k >name=Part22 >size=1536 >path=/home/luisa/archivos/Disco2.dk >f=BF
-fdisk >type=L >unit=k >name=Part23 >size=1536 >path=/home/luisa/archivos/Disco2.dk >f=FF
-fdisk >type=L >unit=k >name=Part24 >size=1536 >path=/home/luisa/archivos/Disco2.dk >f=BF
-fdisk >type=L >unit=k >name=Part25 >size=1536 >path=/home/luisa/archivos/Disco2.dk >f=wF
-fdisk >type=L >unit=k >name=Part26 >size=1536 >path=/home/luisa/archivos/Disco2.dk >f=BF
-fdisk >type=L >unit=k >name=Part27 >size=1536 >path=/home/luisa/archivos/Disco2.dk >f=FF
+fdisk >type=L >unit=k >name=Part16 >size=1536 >path=/home/luisa/archivos/Disco2.dk >fit=BF
+fdisk >type=L >unit=k >name=Part17 >size=1536 >path=/home/luisa/archivos/Disco2.dk >fit=FF
+fdisk >type=L >unit=k >name=Part18 >size=1536 >path=/home/luisa/archivos/Disco2.dk >fit=BF
+fdisk >type=L >unit=k >name=Part19 >size=1536 >path=/home/luisa/archivos/Disco2.dk >fit=WF
+fdisk >type=L >unit=k >name=Part20 >size=1536 >path=/home/luisa/archivos/Disco2.dk >fit=BF
+fdisk >type=L >unit=k >name=Part21 >size=1536 >path=/home/luisa/archivos/Disco2.dk >fit=FF
+fdisk >type=L >unit=k >name=Part22 >size=1536 >path=/home/luisa/archivos/Disco2.dk >fit=BF
+fdisk >type=L >unit=k >name=Part23 >size=1536 >path=/home/luisa/archivos/Disco2.dk >fit=FF
+fdisk >type=L >unit=k >name=Part24 >size=1536 >path=/home/luisa/archivos/Disco2.dk >fit=BF
+fdisk >type=L >unit=k >name=Part25 >size=1536 >path=/home/luisa/archivos/Disco2.dk >fit=wF
+fdisk >type=L >unit=k >name=Part26 >size=1536 >path=/home/luisa/archivos/Disco2.dk >fit=BF
+fdisk >type=L >unit=k >name=Part27 >size=1536 >path=/home/luisa/archivos/Disco2.dk >fit=FF
 
 
 #Particiones en el disco 5
-fdisk >type=E >unit=k >name=Part30 >size=5120 >path="/home/luisa/archivos/mis archivos/Disco5.dk" >f=BF #5MB
-fdisk >type=L >unit=k >name=Part31 >size=1024 >path="/home/luisa/archivos/mis archivos/Disco5.dk" >f=BF
-fdisk >type=P >unit=k >name=Part32 >size=5120 >path="/home/luisa/archivos/mis archivos/Disco5.dk" >f=BF
-fdisk >type=L >unit=k >name=Part33 >size=1024 >path="/home/luisa/archivos/mis archivos/Disco5.dk" >f=BF
-fdisk >type=P >unit=k >name=Part34 >size=5120 >path="/home/luisa/archivos/mis archivos/Disco5.dk" >f=BF
-fdisk >type=L >unit=k >name=Part36 >size=1024 >path="/home/luisa/archivos/mis archivos/Disco5.dk" >f=BF
-fdisk >type=L >unit=k >name=Part37 >size=1024 >path="/home/luisa/archivos/mis archivos/Disco5.dk" >f=BF
+fdisk >type=E >unit=k >name=Part30 >size=5120 >path="/home/luisa/archivos/mis archivos/Disco5.dk" >fit=BF #5MB
+fdisk >type=L >unit=k >name=Part31 >size=1024 >path="/home/luisa/archivos/mis archivos/Disco5.dk" >fit=BF
+fdisk >type=P >unit=k >name=Part32 >size=5120 >path="/home/luisa/archivos/mis archivos/Disco5.dk" >fit=BF
+fdisk >type=L >unit=k >name=Part33 >size=1024 >path="/home/luisa/archivos/mis archivos/Disco5.dk" >fit=BF
+fdisk >type=P >unit=k >name=Part34 >size=5120 >path="/home/luisa/archivos/mis archivos/Disco5.dk" >fit=BF
+fdisk >type=L >unit=k >name=Part36 >size=1024 >path="/home/luisa/archivos/mis archivos/Disco5.dk" >fit=BF
+fdisk >type=L >unit=k >name=Part37 >size=1024 >path="/home/luisa/archivos/mis archivos/Disco5.dk" >fit=BF
 
 #Eliminar particiones disco1
 fdisk >delete=fast >name=Part1 >path=/home/luisa/archivos/Disco1.dk
@@ -66,7 +66,7 @@ fdisk >delete=fast >name=Part6 >path=/home/luisa/archivos/Disco1.dk
 fdisk >delete=fast >name=Part10 >path=/home/luisa/archivos/Disco1.dk #Error no existe
 fdisk >delete=fast >name=Part9 >path=/home/luisa/archivos/Disco1.dk
 #Agregando espacio
-fdisk >add=500 >unit=K >path=/home/luisa/archivos/Disco1.dk >name=Part4
+#fdisk >add=500 >unit=K >path=/home/luisa/archivos/Disco1.dk >name=Part4
 
 #Eliminadndo y agregando espacio disco2
 fdisk >delete=fast >name=Part13 >path=/home/luisa/archivos/Disco2.dk
@@ -74,15 +74,30 @@ fdisk >add=1 >unit=m >path=/home/luisa/archivos/Disco2.dk >name=Part12
 
 #MONTAR PARTICIONES
 mount >path=/home/luisa/archivos/Disco3.dk >name=Part3 #ERROR no existe
-mount >path=/home/luisa/archivos/Disco1.dk >name=Part2 #581a
-mount >path=/home/luisa/archivos/Disco1.dk >name=Part3 #581b
-mount >path=/home/luisa/archivos/Disco1.dk >name=Part4 #581c
-mount >path=/home/luisa/archivos/Disco1.dk >name=Part5 #581d
-mount >path=/home/luisa/archivos/Disco1.dk >name=Part7 #581e
-mount >path=/home/luisa/archivos/Disco2.dk >name=Part14 #582a
-mount >path=/home/luisa/archivos/Disco2.dk >name=Part15 #582b
-mount >path=/home/luisa/archivos/Disco2.dk >name=Part16 #582c
-mount >path=/home/luisa/archivos/Disco2.dk >name=Part17 #582d
-mount >path="/home/luisa/archivos/mis archivos/Disco5.dk" >name=Part30 #583a
-mount >path="/home/luisa/archivos/mis archivos/Disco5.dk" >name=Part31 #583b
-mount >path="/home/luisa/archivos/mis archivos/Disco5.dk" >name=Part32 #583c
+mount >path=/home/luisa/archivos/Disco1.dk >name=Part2 #811Disco1
+mount >path=/home/luisa/archivos/Disco1.dk >name=Part3 #812Disco1
+mount >path=/home/luisa/archivos/Disco1.dk >name=Part4 #813Disco1
+mount >path=/home/luisa/archivos/Disco1.dk >name=Part5 #814Disco1
+mount >path=/home/luisa/archivos/Disco1.dk >name=Part7 #815Disco1
+mount >path=/home/luisa/archivos/Disco2.dk >name=Part14 #811Disco2
+mount >path=/home/luisa/archivos/Disco2.dk >name=Part15 #812Disco2
+mount >path=/home/luisa/archivos/Disco2.dk >name=Part16 #813Disco2
+mount >path=/home/luisa/archivos/Disco2.dk >name=Part17 #814Disco2
+mount >path="/home/luisa/archivos/mis archivos/Disco5.dk" >name=Part30 #811Disco5
+mount >path="/home/luisa/archivos/mis archivos/Disco5.dk" >name=Part31 #812Disco5
+mount >path="/home/luisa/archivos/mis archivos/Disco5.dk" >name=Part32 #813Disco5
+
+#DESMONTAR PARTICIONES
+unmount >id=811Disco2
+unmount >id=811Disco5
+unmount >id=812Disco5
+unmount >id=813Disco2
+unmount >id=581x #ERROR
+
+#REPORTES
+rep >id=811Disco1 >Path=/home/luisa/archivos/reports/reporte1.jpg >name=disk
+rep >id=811Disco1 >Path=/home/luisa/archivos/reports/reporte2.jpg >name=mbr
+rep >id=812Disco2 >path=/home/luisa/archivos/reports/reporte3.jpg >name=disk
+rep >id=812Disco2 >path=/home/luisa/archivos/reports/reporte4.jpg >name=mbr
+rep >id=813Disco5 >path=/home/luisa/archivos/reports/reporte5.jpg >name=disk
+rep >id=813Disco5 >path=/home/luisa/archivos/reports/reporte6.jpg >name=mbr

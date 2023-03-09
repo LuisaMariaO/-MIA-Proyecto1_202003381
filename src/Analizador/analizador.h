@@ -2,6 +2,7 @@
 #include <list>
 #include "estructuras.h"
 #include <map>
+#include <cmath>
 using namespace std;
 
 
@@ -47,5 +48,6 @@ void rep(char* parametros);
 void repMbr(string path, string id);
 string getPathWName(string path);
 string toLower(string valor);
+void repDisk(string path, string id);
 
 void rep();
