@@ -2345,6 +2345,14 @@ void rep(char* parametros){
     cout<<"\n";
 }
 
+void pause(){
+    char text[500];
+    cout<<"PAUSADO"<<endl;
+    cout<<"Presione [Cualquier tecla] + [Enter] para continuar"<<endl;
+    scanf(" %[^\n]",text);
+    cout<<"PAUSA TERMINADA\n"<<endl;
+}
+
 /*Funcion que define que comando es el que hay que ejecutar*/
 void analizar(char *comando) {
  
@@ -2373,6 +2381,12 @@ void analizar(char *comando) {
     }
     else if(strcasecmp(token,"unmount")==0){
         unmount(token);
+    }
+    else if(strcasecmp(token,"pause")==0){
+        pause();
+    }
+    else if(strcasecmp(token,"exit")==0){
+        exit(0); //Para terminar la ejecución del programa sin cerrar la terminal
     }
     else if (token[0]=='#'){
         //Si es un comentario, no pasa nada

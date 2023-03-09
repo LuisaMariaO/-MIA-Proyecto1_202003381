@@ -50,4 +50,4 @@ string getPathWName(string path);
 string toLower(string valor);
 void repDisk(string path, string id);
 
-void rep();
+void pause();
