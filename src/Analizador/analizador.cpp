@@ -1271,12 +1271,12 @@ void fdiskAdd(char* ruta, char name[16], int add){
                         prExt.part_s = prExt.part_s+add; //Sumo el nuevo espacio
                         mbr.particiones[pos] = prExt;
                         
-                        
+                        /*Creo que el error está aquí, revisar part start*/
                         mbr.particiones[pos+1].part_start = (mbr.particiones[pos+1].part_start+add); //Corro el inicio de esta partición
                         mbr.particiones[pos+1].part_s = (mbr.particiones[pos+1].part_s-add); //Resto el espacio
 
                         fseek(archivo,0,SEEK_SET); //Actualizo el mbr
-                        fwrite(&prExt,sizeof(MBR),1,archivo);
+                        fwrite(&mbr,sizeof(MBR),1,archivo);
                         cout<<"¡Tamaño de la partición actualizado!"<<endl;
                     }
                     else{
@@ -1289,7 +1289,7 @@ void fdiskAdd(char* ruta, char name[16], int add){
                             prExt.part_s = prExt.part_s+add; //Sumo el nuevo espacio
                             mbr.particiones[pos] = prExt;
                             fseek(archivo,0,SEEK_SET); //Actualizo el mbr
-                            fwrite(&prExt,sizeof(MBR),1,archivo);
+                            fwrite(&mbr,sizeof(MBR),1,archivo);
                             cout<<"¡Tamaño de la partición actualizado!"<<endl;
                         }
                         else{
@@ -1305,7 +1305,7 @@ void fdiskAdd(char* ruta, char name[16], int add){
                 prExt.part_s = prExt.part_s+add;
                 mbr.particiones[pos] = prExt;
                 fseek(archivo,0,SEEK_SET); //Actualizo el mbr
-                fwrite(&prExt,sizeof(MBR),1,archivo);
+                fwrite(&mbr,sizeof(MBR),1,archivo);
                 cout<<"¡Tamaño de la partición actualizado!"<<endl;
                 }
                 else{
