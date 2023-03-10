@@ -42,7 +42,7 @@ typedef struct
     int s_free_inodes_count; //Contiene dl número de inodos libres
     time_t s_mtime; //Última fecha en el que el sistema fue montado
     time_t s_umtime; //Última fecha en el que el sistema fue desmontado
-    int s_mnt_count; //Indica cúantas veces se ha montado el sistema
+    int s_mnt_count=0; //Indica cúantas veces se ha montado el sistema
     int s_magic; //Valor que identifica al sistema de archivos, tendrá el valor 0xEF53
     int s_inode_s; //Tamaño del inodo
     int s_block_s; //Tamaño del bloque
@@ -79,7 +79,7 @@ typedef struct
 typedef struct
 {
     char b_name[12]; //Nombre de la carpeta o archivo
-    int b_inodo; //Apuntador hacia un inodo asociado al archivo o carpeta
+    int b_inodo=-1; //Apuntador hacia un inodo asociado al archivo o carpeta
 }Content;
 
 typedef struct
@@ -94,5 +94,15 @@ typedef struct
 
 typedef struct
 {
-    int b_content[16]; //Array con los apuntadores a bloques (de archivo o carpeta)
+    int b_content[16]={-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1}; //Array con los apuntadores a bloques (de archivo o carpeta)
 }BloqueApuntadores;
+
+typedef struct
+{
+    int no=0;
+    char accion[20];
+    char nombre[64];
+    char archivoDestino[20];
+    char contenido[25];
+    time_t fecha;
+}Journaling;

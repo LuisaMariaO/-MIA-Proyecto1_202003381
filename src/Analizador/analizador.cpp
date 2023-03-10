@@ -16,6 +16,9 @@ map <string,string>::iterator it;
 /*<id,nombreParticion>*/
 map <string, string> nombres;
 
+/*<id,IniciodeParticion>*/
+map <string, int> inicios;
+map <string, int>::iterator it2;
 /*<nombreDisco,ruta>*/
 map <string,string> rutas;
 
@@ -1587,12 +1590,13 @@ void montarParticion(char* ruta, char name[16]){
     FILE *archivo= fopen(ruta,"rb+");
     fseek(archivo,0,SEEK_SET);
     fread(&mbr, sizeof(MBR),1,archivo);
-
+    int inicioParticion=0;
 
 
     for(int i=0; i<4; i++){
         if (strcasecmp(name,mbr.particiones[i].part_name)==0){
             encontrada=true;
+            inicioParticion = mbr.particiones[i].part_start;
             break;
         }
         if(mbr.particiones[i].part_type=='E'){//Si la partición es extendida, reviso en las particiones lógicas
@@ -1605,6 +1609,7 @@ void montarParticion(char* ruta, char name[16]){
 
             if(strcasecmp(name,tmp.part_name)==0){
                     encontrada=true;
+                    inicioParticion = tmp.part_start;
                     break;
             }
 
@@ -1613,6 +1618,7 @@ void montarParticion(char* ruta, char name[16]){
                 if(strcasecmp(name,tmp.part_name)==0){
                     
                     encontrada=true;
+                    inicioParticion = tmp.part_start;
                     break;
                 }
                 
@@ -1624,6 +1630,7 @@ void montarParticion(char* ruta, char name[16]){
                     if(strcasecmp(name,tmp.part_name)==0){
                     
                     encontrada=true;
+                    inicioParticion = tmp.part_start;
                     break;
                 }
                 }
@@ -1652,7 +1659,20 @@ void montarParticion(char* ruta, char name[16]){
             
             montadas[id] = ruta; //Agrego el par <id,rutaDisco> 
             nombres[id] = name; //Agrego el par <id,nombreParticion>
+            inicios[id] = inicioParticion; //Agrego el par <id, inicioParticion>
 
+            fseek(archivo,inicioParticion,SEEK_SET); //Me muevo al inicio de la particion
+            SuperBloque superbloque;
+            fread(&superbloque,sizeof(SuperBloque),1,archivo);
+
+            if(superbloque.s_filesystem_type!=0){//Si la partición ya se encuentra formateadas
+                time_t now = time(nullptr); //Obtengo la fecha en que se está montando el sistema
+                superbloque.s_mtime = now; 
+                superbloque.s_mnt_count++;
+                fseek(archivo,inicioParticion,SEEK_SET);//Inicio de la partición
+                fwrite(&superbloque,sizeof(SuperBloque),1,archivo);//Escribo el superbloque con la información actualizada
+
+            }
            
            
             cout<<"Partición <"<<name<<"> montada! ID: "<<id<<endl;
@@ -1742,13 +1762,31 @@ void desmontarParticion(string id){
     it = montadas.find(id);
     if(it!=montadas.end()){
         //Si la encuentro, la elimino
+        const char* rutac = it->second.c_str();
+        FILE* archivo =fopen(rutac,"rb+"); //Abro el archivo
+        //Pero primero registro la fecha en que se está desmontando el sistema
+        it2 = inicios.find(id);
+        if(it2!=inicios.end()){
+            fseek(archivo,it2->second,SEEK_SET); //Me muevo al inicio de la particion
+            SuperBloque superbloque;
+            fread(&superbloque,sizeof(SuperBloque),1,archivo);
+
+            if(superbloque.s_filesystem_type!=0){//Si la partición ya se encuentra formateada
+                time_t now = time(nullptr); //Obtengo la fecha en que se está desmontando el sistema
+                superbloque.s_umtime = now; 
+                fseek(archivo,it2->second,SEEK_SET);//Inicio de la partición
+                fwrite(&superbloque,sizeof(SuperBloque),1,archivo);//Escribo el superbloque con la información actualizada
+
+            }
+            inicios.erase(it2);
+        }
         montadas.erase(it);
         it=nombres.find(id);
         if(it!=nombres.end()){
             nombres.erase(it);
         }
         cout<<"¡Partición desmontada!"<<endl;
-
+        fclose(archivo);
     }
     else{
         cout<<"Error: No se encontró el id"<<endl;
@@ -2353,6 +2391,691 @@ void pause(){
     cout<<"PAUSA TERMINADA\n"<<endl;
 }
 
+void formatear(string id, char fs){
+    bool formatear=true;
+
+    string rutaDisco;
+    string nombreParticion;
+
+    //Primero reviso si el id de la partición existe
+    it = montadas.find(id);
+    if(it!=montadas.end()){
+        //Si la encontró
+      
+        rutaDisco=it->second; //Ruta del disco
+        it = nombres.find(id);
+        if(it!=nombres.end()){
+            nombreParticion = it->second; //Nombre de la partición
+        }
+
+    }
+    else{
+        cout<<"Error: No se encontró el id"<<endl;
+        formatear=false;
+    }
+
+    if(formatear){
+        //Si las condiciones son favorables para realizar el formateo
+        bool flogica=false; //Banderas para determinar si se encontró la partición y si es primaria, extendida o lógica
+        bool encontrada=false;
+        bool fprExt = false;
+        Particion prExt; //Si la partición a ,odificar es primaria o extendida
+        EBR logica,ultima;
+        MBR mbr;
+
+
+        FILE *archivo= fopen(rutaDisco.c_str(),"rb+");
+        fseek(archivo,0,SEEK_SET);
+        fread(&mbr, sizeof(MBR),1,archivo);
+
+
+
+        for(int i=0; i<4; i++){
+            if (strcasecmp(nombreParticion.c_str(),mbr.particiones[i].part_name)==0){
+                if(mbr.particiones[i].part_type=='E'){ //Si es extendida no se puede formatear pues su función es alojar las particiones lógicas
+                    cout<<"Error: No es posible formatear una partición extendida"<<endl;
+                    break;
+                }
+                encontrada=true;
+                fprExt=true;
+                memcpy(&prExt,&mbr.particiones[i],sizeof(Particion));
+                break;
+            }
+            if(mbr.particiones[i].part_type=='E'){//Si la partición es extendida, reviso en las particiones lógicas
+                EBR tmp;
+                
+                fseek(archivo,mbr.particiones[i].part_start,SEEK_SET); //Me muevo al inicoi de la partición extendida para leer el EBR
+                fread(&tmp, sizeof(EBR),1,archivo);
+
+                
+                if(strcasecmp(nombreParticion.c_str(),tmp.part_name)==0){
+                        
+                        encontrada=true;
+                        flogica=true;
+                        memcpy(&logica,&tmp,sizeof(EBR));
+                        break;
+                    
+                }
+
+                while(tmp.part_next!=-1){
+                
+                    if(strcasecmp(nombreParticion.c_str(),tmp.part_name)==0){
+                        
+                        encontrada=true;
+                        flogica=true;
+                        memcpy(&logica,&tmp,sizeof(EBR));
+                        break;
+                    }
+                    memcpy(&ultima,&tmp,sizeof(EBR));
+                    fseek(archivo, tmp.part_next,SEEK_SET);
+                    fread(&tmp,sizeof(EBR),1,archivo); //Cambio a a la siguiente partición lógica
+                    
+                    if(tmp.part_next==-1){
+                        if(strcasecmp(nombreParticion.c_str(),tmp.part_name)==0){
+                        
+                            encontrada=true;
+                            flogica=true;
+                            memcpy(&logica,&tmp,sizeof(EBR));
+                            break;
+                    }
+                    }
+                }
+            }
+        }
+
+        if(encontrada){
+            int n;
+            float n_numerador;
+            float n_denominador;
+            int bloques;
+            float inodos_parcial;
+            int inodos;
+
+            SuperBloque superbloque;
+            if(fprExt){ //Si es primaria
+                if(fs=='3'){ //EXT3
+                    n_numerador = prExt.part_s-sizeof(SuperBloque);
+                    n_denominador = 4 + sizeof(Journaling) + sizeof(Inodo) + (3 * sizeof(BloqueArchivos));
+                    n_numerador = n_numerador/n_denominador;
+                    n = floor(n_numerador); 
+
+                    inodos_parcial = n / 5;
+                    inodos = floor(inodos_parcial);
+                    int journaling = inodos;
+
+                    bloques = 3*inodos;
+
+
+                    /*CREO LA CARPETA RAIZ Y EL ARCHIVO USERS.TXT*/
+                    //Inodo carpeta /
+                    Inodo raiz;
+                    raiz.i_uid=1;
+                    raiz.i_gid=1;
+                    raiz.i_s=64;
+                    time_t now = time(nullptr);
+                    raiz.i_ctime=now;
+                    now = time(nullptr);
+                    raiz.i_mtime=now;
+                    raiz.i_type='0'; //Tipo carpeta
+                    raiz.i_perm=664;
+
+                    //Creo el bloque de carpeta
+                    BloqueCarpeta carpeta;
+                    strcpy(carpeta.b_content[0].b_name,"/");
+                    strcpy(carpeta.b_content[1].b_name,"/");
+                    strcpy(carpeta.b_content[2].b_name,"users.txt");
+
+                    //Creo el inodo del archivo
+                    Inodo iarchivo;
+                    iarchivo.i_uid=1;
+                    iarchivo.i_gid=1;
+                    iarchivo.i_s=27;
+                    iarchivo.i_ctime=time(nullptr);
+                    iarchivo.i_mtime=time(nullptr);
+                    iarchivo.i_type='1'; //Tipo archivo
+                    iarchivo.i_perm=664;
+                    
+                    //Asocio el inodo raiz con el bloque de carpeta
+                    raiz.i_block[0] = prExt.part_start + sizeof(SuperBloque) + (journaling*sizeof(Journaling)) + inodos + bloques + (inodos * sizeof(Inodo)); //Acá debería estar el primer bloque
+                    //Asocio el bloque de carpeta con el inodo de archivo
+                    carpeta.b_content[2].b_inodo = prExt.part_start + sizeof(SuperBloque) + (journaling*sizeof(Journaling)) + inodos + bloques + sizeof(Inodo);//Acá debe estar el inodo del archivo
+
+                    //Escribo el contenido de users.text
+                    BloqueArchivos barchivo;
+                    strcpy(barchivo.b_content,"1,G,root\n1,U,root,root,123\n");
+
+                    //Asocio el inodo de archivo con el bloque de archivo
+                    iarchivo.i_block[0] = prExt.part_start + sizeof(SuperBloque) + sizeof(Journaling) + inodos + bloques + (inodos * sizeof(Inodo)) + sizeof(BloqueArchivos);
+
+                    
+              
+                    superbloque.s_filesystem_type=3;
+                    superbloque.s_inodes_count=inodos;
+                    superbloque.s_blocks_count=bloques;
+                    superbloque.s_free_blocks_count=(bloques-2);
+                    superbloque.s_free_inodes_count=(inodos-2);
+                    superbloque.s_magic=0xEF53;
+                    superbloque.s_inode_s=sizeof(Inodo);
+                    superbloque.s_block_s=sizeof(BloqueArchivos);
+                    superbloque.s_first_ino = prExt.part_start + sizeof(SuperBloque) + (journaling*sizeof(Journaling)) +inodos + bloques + (2*sizeof(Inodo)); //Acá está el primer inodo libre
+                    superbloque.s_first_blo = prExt.part_start + sizeof(SuperBloque) + (journaling*sizeof(Journaling)) + inodos + bloques + (inodos * sizeof(Inodo)) + (2*sizeof(BloqueArchivos)); //Acá está el primer bloque libre
+                    superbloque.s_bm_inode_start =  prExt.part_start + sizeof(SuperBloque) + (journaling*sizeof(Journaling));
+                    superbloque.s_bm_block_start = prExt.part_start + sizeof(SuperBloque) + (journaling*sizeof(Journaling)) + inodos;
+                    superbloque.s_inode_start = prExt.part_start + sizeof(SuperBloque) + (journaling*sizeof(Journaling)) + inodos + bloques;
+                    superbloque.s_block_start = prExt.part_start + sizeof(SuperBloque) + (journaling*sizeof(Journaling)) + inodos + bloques + (inodos * sizeof(Inodo));
+                    
+                    /*Escribiendo las estructuras*/
+                    fseek(archivo,prExt.part_start,SEEK_SET);
+                    fwrite(&superbloque,sizeof(SuperBloque),1,archivo);//Escribe al inicio de la partición el superbloque
+                    
+                    //Ahora escribo en el journaling la creación de la carpeta y archivo inicial
+                    Journaling accion;
+                    accion.no=1;
+                    strcpy(accion.accion, "[Create] carpeta");
+                    strcpy(accion.nombre,"/");
+                    accion.fecha = time(nullptr);
+                    fwrite(&accion,sizeof(Journaling),1,archivo);
+
+                    accion.no=2;
+                    strcpy(accion.accion, "[Create] archivo");
+                    strcpy(accion.nombre,"users.txt");
+                    accion.fecha = time(nullptr);
+                    fwrite(&accion,sizeof(Journaling),1,archivo);
+
+                    accion.no=3;
+                    strcpy(accion.accion, "[Create] grupo");
+                    strcpy(accion.nombre,"root");
+                    strcpy(accion.archivoDestino,"users.text");
+                    strcpy(accion.contenido,"1,G,root\n");
+                    accion.fecha = time(nullptr);
+                    fwrite(&accion,sizeof(Journaling),1,archivo);
+
+                    accion.no=4;
+                    strcpy(accion.accion, "[Create] usuario");
+                    strcpy(accion.nombre,"root");
+                    strcpy(accion.archivoDestino,"users.text");
+                    strcpy(accion.contenido,"1,U,root,root,123\n");
+                    accion.fecha = time(nullptr);
+                    fwrite(&accion,sizeof(Journaling),1,archivo);
+                    
+                
+                    char uno ='1';
+                    char cero = '0';
+                    //Ahora toca el bitmap de inodos, ya se escribieron 2
+                    fseek(archivo,superbloque.s_bm_inode_start,SEEK_SET);
+                    fwrite(&uno,sizeof(char),1,archivo);
+                    fwrite(&uno,sizeof(char),1,archivo);
+                    //Ahora escribo los 0
+                    for(int i=2; i<inodos; i++){
+                        fwrite(&cero,sizeof(char),1,archivo);
+                    }
+                  
+
+                    //Ahora toca el bitmap de bloques, ya se escribieron 2
+                    fseek(archivo,superbloque.s_bm_block_start,SEEK_SET);
+                    fwrite(&uno,sizeof(char),1,archivo);
+                    fwrite(&uno,sizeof(char),1,archivo);
+                    //Ahora escribo los 0
+                    for(int i=2; i<bloques; i++){
+                        fwrite(&cero,sizeof(char),1,archivo);
+                    }
+
+                    //Ahora escribo los inodos preparados anteriormente
+                    fseek(archivo,superbloque.s_inode_start,SEEK_SET);
+                    fwrite(&raiz,sizeof(Inodo),1,archivo);
+                    fwrite(&iarchivo,sizeof(Inodo),1,archivo);
+
+                    //Ahora escribo los bloques preparados anteriormente
+                    fseek(archivo,superbloque.s_block_start,SEEK_SET);
+                    fwrite(&carpeta,sizeof(BloqueCarpeta),1,archivo);
+                    fwrite(&barchivo,sizeof(BloqueArchivos),1,archivo);
+
+                    cout<<"¡Partición formateada con el sistema de archivos EXT3!"<<endl;
+
+                }
+                else{ //EXT2
+                    n_numerador = prExt.part_s-sizeof(SuperBloque);
+                    n_denominador = 4 + sizeof(Inodo) + (3 * sizeof(BloqueArchivos));
+                    n_numerador = n_numerador/n_denominador;
+                    n = floor(n_numerador); 
+
+                    inodos_parcial = n /4;
+                    inodos = floor(inodos_parcial);
+
+                    bloques = 3*inodos;
+
+
+                    /*CREO LA CARPETA RAIZ Y EL ARCHIVO USERS.TXT*/
+                    //Inodo carpeta /
+                    Inodo raiz;
+                    raiz.i_uid=1;
+                    raiz.i_gid=1;
+                    raiz.i_s=64;
+                    time_t now = time(nullptr);
+                    raiz.i_ctime=now;
+                    now = time(nullptr);
+                    raiz.i_mtime=now;
+                    raiz.i_type='0'; //Tipo carpeta
+                    raiz.i_perm=664;
+
+                    //Creo el bloque de carpeta
+                    BloqueCarpeta carpeta;
+                    strcpy(carpeta.b_content[0].b_name,"/");
+                    strcpy(carpeta.b_content[1].b_name,"/");
+                    strcpy(carpeta.b_content[2].b_name,"users.txt");
+
+                    //Creo el inodo del archivo
+                    Inodo iarchivo;
+                    iarchivo.i_uid=1;
+                    iarchivo.i_gid=1;
+                    iarchivo.i_s=27;
+                    iarchivo.i_ctime=time(nullptr);
+                    iarchivo.i_mtime=time(nullptr);
+                    iarchivo.i_type='1'; //Tipo archivo
+                    iarchivo.i_perm=664;
+                    
+                    //Asocio el inodo raiz con el bloque de carpeta
+                    raiz.i_block[0] = prExt.part_start + sizeof(SuperBloque) + inodos + bloques + (inodos * sizeof(Inodo)); //Acá debería estar el primer bloque
+                    //Asocio el bloque de carpeta con el inodo de archivo
+                    carpeta.b_content[2].b_inodo = prExt.part_start + sizeof(SuperBloque) + inodos + bloques + sizeof(Inodo);//Acá debe estar el inodo del archivo
+
+                    //Escribo el contenido de users.text
+                    BloqueArchivos barchivo;
+                    strcpy(barchivo.b_content,"1,G,root\n1,U,root,root,123\n");
+
+                    //Asocio el inodo de archivo con el bloque de archivo
+                    iarchivo.i_block[0] = prExt.part_start + sizeof(SuperBloque) + inodos + bloques + (inodos * sizeof(Inodo)) + sizeof(BloqueArchivos);
+
+                    
+                 
+                    superbloque.s_filesystem_type=2;
+                    superbloque.s_inodes_count=inodos;
+                    superbloque.s_blocks_count=bloques;
+                    superbloque.s_free_blocks_count=(bloques-2);
+                    superbloque.s_free_inodes_count=(inodos-2);
+                    superbloque.s_magic=0xEF53;
+                    superbloque.s_inode_s=sizeof(Inodo);
+                    superbloque.s_block_s=sizeof(BloqueArchivos);
+                    superbloque.s_first_ino = prExt.part_start + sizeof(SuperBloque) + inodos + bloques + (2*sizeof(Inodo)); //Acá está el primer inodo libre
+                    superbloque.s_first_blo = prExt.part_start + sizeof(SuperBloque) + inodos + bloques + (inodos * sizeof(Inodo)) + (2*sizeof(BloqueArchivos)); //Acá está el primer bloque libre
+                    superbloque.s_bm_inode_start =  prExt.part_start + sizeof(SuperBloque);
+                    superbloque.s_bm_block_start = prExt.part_start + sizeof(SuperBloque) + inodos;
+                    superbloque.s_inode_start = prExt.part_start + sizeof(SuperBloque) + inodos + bloques;
+                    superbloque.s_block_start = prExt.part_start + sizeof(SuperBloque) + inodos + bloques + (inodos * sizeof(Inodo));
+                    
+                    /*Escribiendo las estructuras*/
+                    fseek(archivo,prExt.part_start,SEEK_SET);
+                    fwrite(&superbloque,sizeof(SuperBloque),1,archivo);//Escribe al inicio de la partición el superbloque
+                    char uno ='1';
+                    char cero = '0';
+                    //Ahora toca el bitmap de inodos, ya se escribieron 2
+                    fseek(archivo,superbloque.s_bm_inode_start,SEEK_SET);
+                    fwrite(&uno,sizeof(char),1,archivo);
+                    fwrite(&uno,sizeof(char),1,archivo);
+                    //Ahora escribo los 0
+                    for(int i=2; i<inodos; i++){
+                        fwrite(&cero,sizeof(char),1,archivo);
+                    }
+                  
+
+                    //Ahora toca el bitmap de bloques, ya se escribieron 2
+                    fseek(archivo,superbloque.s_bm_block_start,SEEK_SET);
+                    fwrite(&uno,sizeof(char),1,archivo);
+                    fwrite(&uno,sizeof(char),1,archivo);
+                    //Ahora escribo los 0
+                    for(int i=2; i<bloques; i++){
+                        fwrite(&cero,sizeof(char),1,archivo);
+                    }
+
+                    //Ahora escribo los inodos preparados anteriormente
+                    fseek(archivo,superbloque.s_inode_start,SEEK_SET);
+                    fwrite(&raiz,sizeof(Inodo),1,archivo);
+                    fwrite(&iarchivo,sizeof(Inodo),1,archivo);
+
+                    //Ahora escribo los bloques preparados anteriormente
+                    fseek(archivo,superbloque.s_block_start,SEEK_SET);
+                    fwrite(&carpeta,sizeof(BloqueCarpeta),1,archivo);
+                    fwrite(&barchivo,sizeof(BloqueArchivos),1,archivo);
+                    
+
+                    cout<<"¡Partición formateada con el sistema de archivos EXT2!"<<endl;
+
+                }
+                
+            }
+            else if(flogica){ //Si es lógica
+                if(fs=='3'){ //EXT3
+                    n_numerador = logica.part_s-sizeof(SuperBloque);
+                    n_denominador = 4 + sizeof(Journaling) + sizeof(Inodo) + (3 * sizeof(BloqueArchivos));
+                    n_numerador = n_numerador/n_denominador;
+                    n = floor(n_numerador); 
+
+                    inodos_parcial = n / 5;
+                    inodos = floor(inodos_parcial);
+                    int journaling = inodos;
+
+                    bloques = 3*inodos;
+
+
+                    /*CREO LA CARPETA RAIZ Y EL ARCHIVO USERS.TXT*/
+                    //Inodo carpeta /
+                    Inodo raiz;
+                    raiz.i_uid=1;
+                    raiz.i_gid=1;
+                    raiz.i_s=64;
+                    time_t now = time(nullptr);
+                    raiz.i_ctime=now;
+                    now = time(nullptr);
+                    raiz.i_mtime=now;
+                    raiz.i_type='0'; //Tipo carpeta
+                    raiz.i_perm=664;
+
+                    //Creo el bloque de carpeta
+                    BloqueCarpeta carpeta;
+                    strcpy(carpeta.b_content[0].b_name,"/");
+                    strcpy(carpeta.b_content[1].b_name,"/");
+                    strcpy(carpeta.b_content[2].b_name,"users.txt");
+
+                    //Creo el inodo del archivo
+                    Inodo iarchivo;
+                    iarchivo.i_uid=1;
+                    iarchivo.i_gid=1;
+                    iarchivo.i_s=27;
+                    iarchivo.i_ctime=time(nullptr);
+                    iarchivo.i_mtime=time(nullptr);
+                    iarchivo.i_type='1'; //Tipo archivo
+                    iarchivo.i_perm=664;
+                    
+                    //Asocio el inodo raiz con el bloque de carpeta
+                    raiz.i_block[0] = logica.part_start + sizeof(SuperBloque) + (journaling*sizeof(Journaling)) + inodos + bloques + (inodos * sizeof(Inodo)); //Acá debería estar el primer bloque
+                    //Asocio el bloque de carpeta con el inodo de archivo
+                    carpeta.b_content[2].b_inodo = logica.part_start + sizeof(SuperBloque) + (journaling*sizeof(Journaling)) + inodos + bloques + sizeof(Inodo);//Acá debe estar el inodo del archivo
+
+                    //Escribo el contenido de users.text
+                    BloqueArchivos barchivo;
+                    strcpy(barchivo.b_content,"1,G,root\n1,U,root,root,123\n");
+
+                    //Asocio el inodo de archivo con el bloque de archivo
+                    iarchivo.i_block[0] = logica.part_start + sizeof(SuperBloque) + sizeof(Journaling) + inodos + bloques + (inodos * sizeof(Inodo)) + sizeof(BloqueArchivos);
+
+                    
+              
+                    superbloque.s_filesystem_type=3;
+                    superbloque.s_inodes_count=inodos;
+                    superbloque.s_blocks_count=bloques;
+                    superbloque.s_free_blocks_count=(bloques-2);
+                    superbloque.s_free_inodes_count=(inodos-2);
+                    superbloque.s_magic=0xEF53;
+                    superbloque.s_inode_s=sizeof(Inodo);
+                    superbloque.s_block_s=sizeof(BloqueArchivos);
+                    superbloque.s_first_ino = logica.part_start + sizeof(SuperBloque) + (journaling*sizeof(Journaling)) +inodos + bloques + (2*sizeof(Inodo)); //Acá está el primer inodo libre
+                    superbloque.s_first_blo = logica.part_start + sizeof(SuperBloque) + (journaling*sizeof(Journaling)) + inodos + bloques + (inodos * sizeof(Inodo)) + (2*sizeof(BloqueArchivos)); //Acá está el primer bloque libre
+                    superbloque.s_bm_inode_start =  logica.part_start + sizeof(SuperBloque) + (journaling*sizeof(Journaling));
+                    superbloque.s_bm_block_start = logica.part_start + sizeof(SuperBloque) + (journaling*sizeof(Journaling)) + inodos;
+                    superbloque.s_inode_start = logica.part_start + sizeof(SuperBloque) + (journaling*sizeof(Journaling)) + inodos + bloques;
+                    superbloque.s_block_start = logica.part_start + sizeof(SuperBloque) + (journaling*sizeof(Journaling)) + inodos + bloques + (inodos * sizeof(Inodo));
+                    
+                    /*Escribiendo las estructuras*/
+                    fseek(archivo,logica.part_start,SEEK_SET);
+                    fwrite(&superbloque,sizeof(SuperBloque),1,archivo);//Escribe al inicio de la partición el superbloque
+                    
+                    //Ahora escribo en el journaling la creación de la carpeta y archivo inicial
+                    Journaling accion;
+                    accion.no=1;
+                    strcpy(accion.accion, "[Create] carpeta");
+                    strcpy(accion.nombre,"/");
+                    accion.fecha = time(nullptr);
+                    fwrite(&accion,sizeof(Journaling),1,archivo);
+
+                    accion.no=2;
+                    strcpy(accion.accion, "[Create] archivo");
+                    strcpy(accion.nombre,"users.txt");
+                    accion.fecha = time(nullptr);
+                    fwrite(&accion,sizeof(Journaling),1,archivo);
+
+                    accion.no=3;
+                    strcpy(accion.accion, "[Create] grupo");
+                    strcpy(accion.nombre,"root");
+                    strcpy(accion.archivoDestino,"users.text");
+                    strcpy(accion.contenido,"1,G,root\n");
+                    accion.fecha = time(nullptr);
+                    fwrite(&accion,sizeof(Journaling),1,archivo);
+
+                    accion.no=4;
+                    strcpy(accion.accion, "[Create] usuario");
+                    strcpy(accion.nombre,"root");
+                    strcpy(accion.archivoDestino,"users.text");
+                    strcpy(accion.contenido,"1,U,root,root,123\n");
+                    accion.fecha = time(nullptr);
+                    fwrite(&accion,sizeof(Journaling),1,archivo);
+                    
+                
+                    char uno ='1';
+                    char cero = '0';
+                    //Ahora toca el bitmap de inodos, ya se escribieron 2
+                    fseek(archivo,superbloque.s_bm_inode_start,SEEK_SET);
+                    fwrite(&uno,sizeof(char),1,archivo);
+                    fwrite(&uno,sizeof(char),1,archivo);
+                    //Ahora escribo los 0
+                    for(int i=2; i<inodos; i++){
+                        fwrite(&cero,sizeof(char),1,archivo);
+                    }
+                  
+
+                    //Ahora toca el bitmap de bloques, ya se escribieron 2
+                    fseek(archivo,superbloque.s_bm_block_start,SEEK_SET);
+                    fwrite(&uno,sizeof(char),1,archivo);
+                    fwrite(&uno,sizeof(char),1,archivo);
+                    //Ahora escribo los 0
+                    for(int i=2; i<bloques; i++){
+                        fwrite(&cero,sizeof(char),1,archivo);
+                    }
+
+                    //Ahora escribo los inodos preparados anteriormente
+                    fseek(archivo,superbloque.s_inode_start,SEEK_SET);
+                    fwrite(&raiz,sizeof(Inodo),1,archivo);
+                    fwrite(&iarchivo,sizeof(Inodo),1,archivo);
+
+                    //Ahora escribo los bloques preparados anteriormente
+                    fseek(archivo,superbloque.s_block_start,SEEK_SET);
+                    fwrite(&carpeta,sizeof(BloqueCarpeta),1,archivo);
+                    fwrite(&barchivo,sizeof(BloqueArchivos),1,archivo);
+
+                    cout<<"¡Partición formateada con el sistema de archivos EXT3!"<<endl;
+
+                }
+                else{ //EXT2
+                    n_numerador = logica.part_s-sizeof(SuperBloque);
+                    n_denominador = 4 + sizeof(Inodo) + (3 * sizeof(BloqueArchivos));
+                    n_numerador = n_numerador/n_denominador;
+                    n = floor(n_numerador); 
+
+                    inodos_parcial = n /4;
+                    inodos = floor(inodos_parcial);
+
+                    bloques = 3*inodos;
+
+
+                    /*CREO LA CARPETA RAIZ Y EL ARCHIVO USERS.TXT*/
+                    //Inodo carpeta /
+                    Inodo raiz;
+                    raiz.i_uid=1;
+                    raiz.i_gid=1;
+                    raiz.i_s=64;
+                    time_t now = time(nullptr);
+                    raiz.i_ctime=now;
+                    now = time(nullptr);
+                    raiz.i_mtime=now;
+                    raiz.i_type='0'; //Tipo carpeta
+                    raiz.i_perm=664;
+
+                    //Creo el bloque de carpeta
+                    BloqueCarpeta carpeta;
+                    strcpy(carpeta.b_content[0].b_name,"/");
+                    strcpy(carpeta.b_content[1].b_name,"/");
+                    strcpy(carpeta.b_content[2].b_name,"users.txt");
+
+                    //Creo el inodo del archivo
+                    Inodo iarchivo;
+                    iarchivo.i_uid=1;
+                    iarchivo.i_gid=1;
+                    iarchivo.i_s=27;
+                    iarchivo.i_ctime=time(nullptr);
+                    iarchivo.i_mtime=time(nullptr);
+                    iarchivo.i_type='1'; //Tipo archivo
+                    iarchivo.i_perm=664;
+                    
+                    //Asocio el inodo raiz con el bloque de carpeta
+                    raiz.i_block[0] = logica.part_start + sizeof(SuperBloque) + inodos + bloques + (inodos * sizeof(Inodo)); //Acá debería estar el primer bloque
+                    //Asocio el bloque de carpeta con el inodo de archivo
+                    carpeta.b_content[2].b_inodo = logica.part_start + sizeof(SuperBloque) + inodos + bloques + sizeof(Inodo);//Acá debe estar el inodo del archivo
+
+                    //Escribo el contenido de users.text
+                    BloqueArchivos barchivo;
+                    strcpy(barchivo.b_content,"1,G,root\n1,U,root,root,123\n");
+
+                    //Asocio el inodo de archivo con el bloque de archivo
+                    iarchivo.i_block[0] = logica.part_start + sizeof(SuperBloque) + inodos + bloques + (inodos * sizeof(Inodo)) + sizeof(BloqueArchivos);
+
+                    
+                 
+                    superbloque.s_filesystem_type=2;
+                    superbloque.s_inodes_count=inodos;
+                    superbloque.s_blocks_count=bloques;
+                    superbloque.s_free_blocks_count=(bloques-2);
+                    superbloque.s_free_inodes_count=(inodos-2);
+                    superbloque.s_magic=0xEF53;
+                    superbloque.s_inode_s=sizeof(Inodo);
+                    superbloque.s_block_s=sizeof(BloqueArchivos);
+                    superbloque.s_first_ino = logica.part_start + sizeof(SuperBloque) + inodos + bloques + (2*sizeof(Inodo)); //Acá está el primer inodo libre
+                    superbloque.s_first_blo = logica.part_start + sizeof(SuperBloque) + inodos + bloques + (inodos * sizeof(Inodo)) + (2*sizeof(BloqueArchivos)); //Acá está el primer bloque libre
+                    superbloque.s_bm_inode_start =  logica.part_start + sizeof(SuperBloque);
+                    superbloque.s_bm_block_start = logica.part_start + sizeof(SuperBloque) + inodos;
+                    superbloque.s_inode_start = logica.part_start + sizeof(SuperBloque) + inodos + bloques;
+                    superbloque.s_block_start = logica.part_start + sizeof(SuperBloque) + inodos + bloques + (inodos * sizeof(Inodo));
+                    
+                    /*Escribiendo las estructuras*/
+                    fseek(archivo,logica.part_start,SEEK_SET);
+                    fwrite(&superbloque,sizeof(SuperBloque),1,archivo);//Escribe al inicio de la partición el superbloque
+                    char uno ='1';
+                    char cero = '0';
+                    //Ahora toca el bitmap de inodos, ya se escribieron 2
+                    fseek(archivo,superbloque.s_bm_inode_start,SEEK_SET);
+                    fwrite(&uno,sizeof(char),1,archivo);
+                    fwrite(&uno,sizeof(char),1,archivo);
+                    //Ahora escribo los 0
+                    for(int i=2; i<inodos; i++){
+                        fwrite(&cero,sizeof(char),1,archivo);
+                    }
+                  
+
+                    //Ahora toca el bitmap de bloques, ya se escribieron 2
+                    fseek(archivo,superbloque.s_bm_block_start,SEEK_SET);
+                    fwrite(&uno,sizeof(char),1,archivo);
+                    fwrite(&uno,sizeof(char),1,archivo);
+                    //Ahora escribo los 0
+                    for(int i=2; i<bloques; i++){
+                        fwrite(&cero,sizeof(char),1,archivo);
+                    }
+
+                    //Ahora escribo los inodos preparados anteriormente
+                    fseek(archivo,superbloque.s_inode_start,SEEK_SET);
+                    fwrite(&raiz,sizeof(Inodo),1,archivo);
+                    fwrite(&iarchivo,sizeof(Inodo),1,archivo);
+
+                    //Ahora escribo los bloques preparados anteriormente
+                    fseek(archivo,superbloque.s_block_start,SEEK_SET);
+                    fwrite(&carpeta,sizeof(BloqueCarpeta),1,archivo);
+                    fwrite(&barchivo,sizeof(BloqueArchivos),1,archivo);
+                    
+
+                    cout<<"¡Partición formateada con el sistema de archivos EXT2!"<<endl;
+
+                }
+            }
+            
+        }
+        else{
+            cout<<"Error: No se encontró la partición"<<endl;
+        }
+
+        fclose(archivo);
+
+
+    }
+    else{
+        cout<<"Error: No es posible realizar el formateo"<<endl;
+    }
+}
+
+void mkfs(char* parametros){
+    bool fid = false;
+    bool ftype = false;
+    bool ffs = false;
+
+    
+    parametros = strtok(NULL," ");
+
+    string path;
+    string id;
+    char fs;
+    while (parametros!=NULL){
+        string tmp = parametros;
+        string tipo = get_tipo_parametro(tmp);
+        string valor = get_valor_parametro(tmp);
+
+        if(tipo==">id"){
+            valor = regresarEspacio(valor);
+            id=valor;
+            fid=true;
+        }
+        else if(tipo==">type"){
+            const char* ctipo = tipo.c_str();
+            if(strcasecmp(ctipo,"full")==0){
+                ftype=true;
+            }
+            else{
+                cout<<"Error: Valor para type inválido"<<endl;
+            }
+        }
+        else if(tipo==">fs"){
+            const char* cfs = tipo.c_str();
+            if(strcasecmp(cfs,"2fs")==0){
+                fs = '2';
+                ffs=true;
+            }
+            else if(strcasecmp(cfs,"3fs")==0){
+                fs = '3';
+                ffs=true;
+            }
+            else{
+                cout<<"Error: Valor para fs inválido"<<endl;
+            }
+        }
+        else if(tipo[0] == '#'){
+            //Si viene un comentario, no pasa nada
+            break;
+        }
+        else{
+            
+            cout<<"Parámetro inválido"<<endl;
+        }
+        parametros = strtok(NULL," ");
+        
+    }
+    //Trabajando con los parámetros
+    if(fid){
+        if(!ffs){ //Si no existe el parámetro se toma por defecto el 2fs
+            fs='2';
+        }
+        formatear(id,fs);
+    }
+    else{
+        cout<<"Parámetros insuficientes para realizar una acción"<<endl;
+    }
+    cout<<"\n";
+}
+
 /*Funcion que define que comando es el que hay que ejecutar*/
 void analizar(char *comando) {
  
@@ -2387,6 +3110,9 @@ void analizar(char *comando) {
     }
     else if(strcasecmp(token,"exit")==0){
         exit(0); //Para terminar la ejecución del programa sin cerrar la terminal
+    }
+    else if(strcasecmp(token,"mkfs")==0){
+        mkfs(token);
     }
     else if (token[0]=='#'){
         //Si es un comentario, no pasa nada

@@ -51,3 +51,6 @@ string toLower(string valor);
 void repDisk(string path, string id);
 
 void pause();
+
+void mkfs(char* parametros);
+void formatear(string id, char fs);

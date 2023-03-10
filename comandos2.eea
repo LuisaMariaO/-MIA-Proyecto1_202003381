@@ -1,0 +1,27 @@
+#CREACION DE DISCOS
+mkdisk >size=20 >unit=m >path=/home/luisa/archivos/Discos/Disco1.dk
+mkdisk >unit=k >size=51200 >path=/home/luisa/archivos/Discos/Disco2.dk >fit=BF
+mkdisk >size=10 >path=/home/luisa/archivos/Discos/Disco3.dk
+mkdisk >size=51200 >path="/home/luisa/archivos/Discos/mis archivos/Disco4.dk" >unit=K
+mkdisk >size=20 >path="/home/luisa/archivos/Discos/mis archivos/Disco5.dk" >unit=M >fit=WF
+#Deberia dar error
+mkdisk >param=x >size=30 >path=/home/luisa/archivos/archivos/fase1/Disco.dk
+
+#ELIMINACION DE DISCOS
+#El primero deberia dar error
+rmdk >path=/home/luisa/archivos/Disco3.dk
+rmdk >path=home/Discos/Disco3.dk
+RMdk >path="/home/luisa/archivos/Discos/mis archivos/Disco4.dk"
+
+
+#CREACION DE PARTICION
+fdisk >type=P >unit=K >name=Part1 >size=7680 >path=/home/luisa/archivos/Discos/Disco1.dk >fit=BF
+#MOUNT
+mount >path=/home/luisa/archivos/Discos/Disco1.dk >name=Part1 #811Disco1
+#CREACION DE SISTEMA DE ARCHIVOS
+mkfs >type=full >id=811Disco1 >fs=3fs
+
+#>>>>>>>>>>>>>>>>>>>>>>>>REPORTES 1>>>>>>>>>>>>>>>>
+rep >id=581a >path="/home/luisa/archivos/reportes/reporte1_sb.jpg" >name=sb
+rep >id=581a >path="/home/luisa/archivos/reportes/reporte1_tree.jpg" >name=tree
+pause
