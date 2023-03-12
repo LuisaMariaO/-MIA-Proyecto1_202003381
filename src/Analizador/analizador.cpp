@@ -2313,6 +2313,498 @@ void repDisk(string path, string id){
         cout<<"Error: No se puede graficar el reporte"<<endl;
     }
 }
+
+void repSb(string path, string id){
+    //Reporte de superBloque
+    string colorSb = "\"#FF8B00\"";
+    string colorSbInfo= "\"#FEB358\"";
+    bool graficar=true;
+
+    SuperBloque superbloque;
+    
+    
+    string rutaS;
+    string nameS;
+    int inicioParticion;
+    
+
+    //Primero reviso si el id de la partición existe
+    it = montadas.find(id);
+    if(it!=montadas.end()){
+        //Si la encontró
+      
+        rutaS=it->second; //Ruta del disco
+        it = nombres.find(id);
+        if(it!=nombres.end()){
+            nameS = it->second; //Nombre de la partición
+            it2 = inicios.find(id);
+            if(it2!=inicios.end()){
+                inicioParticion=it2->second;
+            }
+        }
+
+    }
+    else{
+        cout<<"Error: No se encontró el id"<<endl;
+        graficar=false;
+    }
+    if(graficar){
+  //  int length = rutaS.length();
+    const char* ruta= rutaS.c_str();
+    //strcpy(ruta,rutaS.c_str());
+    
+   string rutaDot = getPathWName(path);
+   
+   rutaDot.append("/");
+   rutaDot.append(getFileName(path));
+   rutaDot.append(".dot");
+
+    const char* rDot = rutaDot.c_str();
+    ofstream file(rDot);
+    if(!file){
+        cout<<"Error al generar el archivo"<<endl;
+        return;
+    }
+    FILE *archivo= fopen(ruta,"rb+");
+    fseek(archivo,inicioParticion,SEEK_SET);
+    fread(&superbloque, sizeof(SuperBloque),1,archivo);
+
+
+    file<<"digraph G {\n";
+    file<<"a0[shape=none label=<\n";
+    file<<"<TABLE cellspacing=\"0\" cellpadding=\"0\">\n";
+    file<<"<TR>\n";
+    file<<"<TD bgcolor=";
+    file<<colorSb;
+    file<<"> REPORTE DE SUPERBLOQUE</TD>\n";
+    file<<"<TD bgcolor=";
+    file<<colorSb;
+    file<<"></TD>\n";
+    file<<"</TR>\n";
+    //Comienzo con la información del superbloque
+    file<<"<TR>\n";
+    file<<"<TD bgcolor="<<colorSbInfo<<">s_filesystem_type</TD>\n";
+    file<< "<TD bgcolor="<<colorSbInfo<<">"<<to_string(superbloque.s_filesystem_type)<<"</TD>\n";
+    file<<"</TR>\n";
+    /*
+    file<<"<TR>\n";
+    file<<"<TD bgcolor="<<colorsbInfo<<">mbr_fecha_creacion</TD>\n";
+    tm *ltm = localtime(&mbr.mbr_fecha_creacion);
+    file<< "<TD bgcolor="<<colorMbrInfo<<">" <<ltm->tm_mday<<"-"<<(1+ltm->tm_mon)<<"-"<<(1900+ltm->tm_year)<<" "<<(ltm->tm_hour)<<":"<<(ltm->tm_min)<<":"<<ltm->tm_sec<<"</TD>\n";
+    file<<"</TR>\n";
+    */
+
+    file<<"<TR>\n";
+    file<<"<TD bgcolor="<<colorSbInfo<<">s_inodes_count</TD>\n";
+    file<< "<TD bgcolor="<<colorSbInfo<<">"<<to_string(superbloque.s_inodes_count)<<"</TD>\n";
+    file<<"</TR>\n";
+
+    file<<"<TR>\n";
+    file<<"<TD bgcolor="<<colorSbInfo<<">s_blocks_count</TD>\n";
+    file<< "<TD bgcolor="<<colorSbInfo<<">"<<to_string(superbloque.s_blocks_count)<<"</TD>\n";
+    file<<"</TR>\n";
+
+    file<<"<TR>\n";
+    file<<"<TD bgcolor="<<colorSbInfo<<">s_free_blocks_count</TD>\n";
+    file<< "<TD bgcolor="<<colorSbInfo<<">"<<to_string(superbloque.s_free_blocks_count)<<"</TD>\n";
+    file<<"</TR>\n";
+
+    file<<"<TR>\n";
+    file<<"<TD bgcolor="<<colorSbInfo<<">s_free_inodes_count</TD>\n";
+    file<< "<TD bgcolor="<<colorSbInfo<<">"<<to_string(superbloque.s_free_inodes_count)<<"</TD>\n";
+    file<<"</TR>\n";
+
+    tm *ltm = localtime(&superbloque.s_mtime);
+    if(ltm!=NULL){
+    file<<"<TR>\n";
+    file<<"<TD bgcolor="<<colorSbInfo<<">s_mtime</TD>\n";
+   
+    file<< "<TD bgcolor="<<colorSbInfo<<">" <<ltm->tm_mday<<"-"<<(1+ltm->tm_mon)<<"-"<<(1900+ltm->tm_year)<<" "<<(ltm->tm_hour)<<":"<<(ltm->tm_min)<<":"<<ltm->tm_sec<<"</TD>\n";
+    file<<"</TR>\n";
+    }
+
+    tm* ltm2 = localtime(&superbloque.s_umtime);
+    if(ltm2!=NULL){
+    file<<"<TR>\n";
+    file<<"<TD bgcolor="<<colorSbInfo<<">s_umtime</TD>\n";
+    file<< "<TD bgcolor="<<colorSbInfo<<">" <<ltm2->tm_mday<<"-"<<(1+ltm2->tm_mon)<<"-"<<(1900+ltm2->tm_year)<<" "<<(ltm2->tm_hour)<<":"<<(ltm2->tm_min)<<":"<<ltm2->tm_sec<<"</TD>\n";
+    file<<"</TR>\n";
+    }
+
+    file<<"<TR>\n";
+    file<<"<TD bgcolor="<<colorSbInfo<<">s_mnt_count</TD>\n";
+    file<< "<TD bgcolor="<<colorSbInfo<<">"<<to_string(superbloque.s_mnt_count)<<"</TD>\n";
+    file<<"</TR>\n";
+
+    file<<"<TR>\n";
+    file<<"<TD bgcolor="<<colorSbInfo<<">s_magic</TD>\n";
+    file<< "<TD bgcolor="<<colorSbInfo<<">"<<to_string(superbloque.s_magic)<<"</TD>\n";
+    file<<"</TR>\n";
+
+    file<<"<TR>\n";
+    file<<"<TD bgcolor="<<colorSbInfo<<">s_inode_s</TD>\n";
+    file<< "<TD bgcolor="<<colorSbInfo<<">"<<to_string(superbloque.s_inode_s)<<"</TD>\n";
+    file<<"</TR>\n";
+
+    file<<"<TR>\n";
+    file<<"<TD bgcolor="<<colorSbInfo<<">s_block_s</TD>\n";
+    file<< "<TD bgcolor="<<colorSbInfo<<">"<<to_string(superbloque.s_block_s)<<"</TD>\n";
+    file<<"</TR>\n";
+
+    file<<"<TR>\n";
+    file<<"<TD bgcolor="<<colorSbInfo<<">s_first_ino</TD>\n";
+    file<< "<TD bgcolor="<<colorSbInfo<<">"<<to_string(superbloque.s_first_ino)<<"</TD>\n";
+    file<<"</TR>\n";
+
+    file<<"<TR>\n";
+    file<<"<TD bgcolor="<<colorSbInfo<<">s_first_block</TD>\n";
+    file<< "<TD bgcolor="<<colorSbInfo<<">"<<to_string(superbloque.s_first_blo)<<"</TD>\n";
+    file<<"</TR>\n";
+
+    file<<"<TR>\n";
+    file<<"<TD bgcolor="<<colorSbInfo<<">s_bm_inode_start</TD>\n";
+    file<< "<TD bgcolor="<<colorSbInfo<<">"<<to_string(superbloque.s_bm_inode_start)<<"</TD>\n";
+    file<<"</TR>\n";
+
+    file<<"<TR>\n";
+    file<<"<TD bgcolor="<<colorSbInfo<<">s_bm_block_start</TD>\n";
+    file<< "<TD bgcolor="<<colorSbInfo<<">"<<to_string(superbloque.s_bm_block_start)<<"</TD>\n";
+    file<<"</TR>\n";
+
+    file<<"<TR>\n";
+    file<<"<TD bgcolor="<<colorSbInfo<<">s_inode_start</TD>\n";
+    file<< "<TD bgcolor="<<colorSbInfo<<">"<<to_string(superbloque.s_inode_start)<<"</TD>\n";
+    file<<"</TR>\n";
+
+    file<<"<TR>\n";
+    file<<"<TD bgcolor="<<colorSbInfo<<">s_block_start</TD>\n";
+    file<< "<TD bgcolor="<<colorSbInfo<<">"<<to_string(superbloque.s_block_start)<<"</TD>\n";
+    file<<"</TR>\n";
+    
+
+    
+    
+    fclose(archivo);
+
+    file<<"</TABLE>\n";
+    file<<">]\n";
+    file<<"}\n";
+
+    file.close(); //Ciero el archivo
+    string nombreA = getFileName(path);
+    string rutaA = getPathWName(path);
+    string comando = "dot -Tjpg ";
+    comando+=rutaDot;
+    comando+=" -o ";
+    comando+=rutaA;
+    comando+="/";
+    comando+=nombreA;
+    comando+=".jpg";
+    char* comandoc = new char[comando.length()];
+    strcpy(comandoc,comando.c_str());
+    system(comandoc); //Renderizando
+    
+    cout<<"¡Reporte generado con éxito!"<<endl;
+    }
+    else{
+        cout<<"Error: No se puede graficar el reporte"<<endl;
+    }
+
+}
+
+void repBmInode(string path, string id){
+     //Reporte del bitmap de inodos
+    bool graficar=true;
+
+    SuperBloque superbloque;
+    
+    
+    string rutaS;
+    string nameS;
+    int inicioParticion;
+    
+
+    //Primero reviso si el id de la partición existe
+    it = montadas.find(id);
+    if(it!=montadas.end()){
+        //Si la encontró
+      
+        rutaS=it->second; //Ruta del disco
+        it = nombres.find(id);
+        if(it!=nombres.end()){
+            nameS = it->second; //Nombre de la partición
+            it2 = inicios.find(id);
+            if(it2!=inicios.end()){
+                inicioParticion=it2->second;
+            }
+        }
+
+    }
+    else{
+        cout<<"Error: No se encontró el id"<<endl;
+        graficar=false;
+    }
+    if(graficar){
+  //  int length = rutaS.length();
+    const char* ruta= rutaS.c_str();
+    //strcpy(ruta,rutaS.c_str());
+    
+
+    const char* pathc = path.c_str();
+    ofstream file(pathc);
+    if(!file){
+        cout<<"Error al generar el archivo"<<endl;
+        return;
+    }
+    FILE *archivo= fopen(ruta,"rb+");
+    fseek(archivo,inicioParticion,SEEK_SET);
+    fread(&superbloque, sizeof(SuperBloque),1,archivo);
+    //Muevo el puntero al inicio del bitmap de inodos
+    fseek(archivo,superbloque.s_bm_inode_start,SEEK_SET);
+
+    //Escribo el bitmap en el archivo
+    int registrosLinea=0;
+    char registro;
+    for(int i=0; i<superbloque.s_inodes_count;i++){
+        fread(&registro,sizeof(char),1,archivo);
+        file<<registro;
+        registrosLinea++;
+        if(registrosLinea==20){
+            file<<"\n";
+            registrosLinea=0;
+        }
+    }
+
+    
+
+    
+    
+    fclose(archivo);
+
+    file.close(); //Ciero el archivo
+    
+    cout<<"¡Reporte generado con éxito!"<<endl;
+    }
+    else{
+        cout<<"Error: No se puede generar el reporte"<<endl;
+    }
+}
+void repBmBlock(string path, string id){
+    //Reporte del bitmap de bloques
+    bool graficar=true;
+
+    SuperBloque superbloque;
+    
+    
+    string rutaS;
+    string nameS;
+    int inicioParticion;
+    
+
+    //Primero reviso si el id de la partición existe
+    it = montadas.find(id);
+    if(it!=montadas.end()){
+        //Si la encontró
+      
+        rutaS=it->second; //Ruta del disco
+        it = nombres.find(id);
+        if(it!=nombres.end()){
+            nameS = it->second; //Nombre de la partición
+            it2 = inicios.find(id);
+            if(it2!=inicios.end()){
+                inicioParticion=it2->second;
+            }
+        }
+
+    }
+    else{
+        cout<<"Error: No se encontró el id"<<endl;
+        graficar=false;
+    }
+    if(graficar){
+  //  int length = rutaS.length();
+    const char* ruta= rutaS.c_str();
+    //strcpy(ruta,rutaS.c_str());
+    
+
+    const char* pathc = path.c_str();
+    ofstream file(pathc);
+    if(!file){
+        cout<<"Error al generar el archivo"<<endl;
+        return;
+    }
+    FILE *archivo= fopen(ruta,"rb+");
+    fseek(archivo,inicioParticion,SEEK_SET);
+    fread(&superbloque, sizeof(SuperBloque),1,archivo);
+    //Muevo el puntero al inicio del bitmap de inodos
+    fseek(archivo,superbloque.s_bm_block_start,SEEK_SET);
+
+    //Escribo el bitmap en el archivo
+    int registrosLinea=0;
+    char registro;
+    for(int i=0; i<superbloque.s_blocks_count;i++){
+        fread(&registro,sizeof(char),1,archivo);
+        file<<registro;
+        registrosLinea++;
+        if(registrosLinea==20){
+            file<<"\n";
+            registrosLinea=0;
+        }
+    }
+
+    
+
+    
+    
+    fclose(archivo);
+
+    file.close(); //Ciero el archivo
+    
+    cout<<"¡Reporte generado con éxito!"<<endl;
+    }
+    else{
+        cout<<"Error: No se puede generar el reporte"<<endl;
+    }
+}
+
+void repJournaling(string path, string id){
+         //Reporte de superBloque
+    string colorCabecera = "\"#FFFB00\"";
+    string colorInfo= "\"#F1EF5F\"";
+    bool graficar=true;
+
+    SuperBloque superbloque;
+    
+    
+    string rutaS;
+    string nameS;
+    int inicioParticion;
+    
+
+    //Primero reviso si el id de la partición existe
+    it = montadas.find(id);
+    if(it!=montadas.end()){
+        //Si la encontró
+      
+        rutaS=it->second; //Ruta del disco
+        it = nombres.find(id);
+        if(it!=nombres.end()){
+            nameS = it->second; //Nombre de la partición
+            it2 = inicios.find(id);
+            if(it2!=inicios.end()){
+                inicioParticion=it2->second;
+            }
+        }
+
+    }
+    else{
+        cout<<"Error: No se encontró el id"<<endl;
+        graficar=false;
+    }
+    if(graficar){
+  //  int length = rutaS.length();
+    const char* ruta= rutaS.c_str();
+    //strcpy(ruta,rutaS.c_str());
+    
+   string rutaDot = getPathWName(path);
+   
+   rutaDot.append("/");
+   rutaDot.append(getFileName(path));
+   rutaDot.append(".dot");
+
+    const char* rDot = rutaDot.c_str();
+    ofstream file(rDot);
+    if(!file){
+        cout<<"Error al generar el archivo"<<endl;
+        return;
+    }
+    FILE *archivo= fopen(ruta,"rb+");
+    fseek(archivo,inicioParticion,SEEK_SET);
+    fread(&superbloque, sizeof(SuperBloque),1,archivo);
+    if(superbloque.s_filesystem_type==3){
+
+    file<<"digraph G {\n";
+    file<<"a0[shape=none label=<\n";
+    file<<"<TABLE cellspacing=\"0\" cellpadding=\"0\">\n";
+    file<<"<TR>\n";
+    file<<"<TD bgcolor=";
+    file<<colorCabecera;
+    file<<">No</TD>\n";
+    file<<"<TD bgcolor=";
+    file<<colorCabecera;
+    file<<">Acción</TD>\n";
+    file<<"<TD bgcolor=";
+    file<<colorCabecera;
+    file<<">Nombre</TD>\n";
+    file<<"<TD bgcolor=";
+    file<<colorCabecera;
+    file<<">ArchivoDestino</TD>\n";
+    file<<"<TD bgcolor=";
+    file<<colorCabecera;
+    file<<">Contenido</TD>\n";
+    file<<"<TD bgcolor=";
+    file<<colorCabecera;
+    file<<">Fecha</TD>\n";
+    file<<"</TR>\n";
+    //Comienzo con la información del journaling
+    Journaling registro;
+    for(int i=0; i<superbloque.s_inodes_count;i++){
+        fread(&registro,sizeof(Journaling),1,archivo);
+        if(registro.no==0){
+            break;
+        }
+        else{
+            file<<"<TR>\n";
+            file<< "<TD bgcolor="<<colorInfo<<">"<<to_string(registro.no)<<"</TD>\n";
+            file<< "<TD bgcolor="<<colorInfo<<">"<<(registro.accion)<<"</TD>\n";
+            file<< "<TD bgcolor="<<colorInfo<<">"<<(registro.nombre)<<"</TD>\n";
+            file<< "<TD bgcolor="<<colorInfo<<">"<<(registro.archivoDestino)<<"</TD>\n";
+            file<< "<TD bgcolor="<<colorInfo<<">"<<(registro.contenido)<<"</TD>\n";
+            tm* ltm = localtime(&registro.fecha);
+            file<< "<TD bgcolor="<<colorInfo<<">" <<ltm->tm_mday<<"-"<<(1+ltm->tm_mon)<<"-"<<(1900+ltm->tm_year)<<" "<<(ltm->tm_hour)<<":"<<(ltm->tm_min)<<":"<<ltm->tm_sec<<"</TD>\n";
+
+            file<<"</TR>\n";
+        }
+    }
+    
+    
+
+    
+    
+    fclose(archivo);
+
+    file<<"</TABLE>\n";
+    file<<">]\n";
+    file<<"label=\"Journaling\"";
+    file<<"}\n";
+    
+
+    file.close(); //Ciero el archivo
+    string nombreA = getFileName(path);
+    string rutaA = getPathWName(path);
+    string comando = "dot -Tjpg ";
+    comando+=rutaDot;
+    comando+=" -o ";
+    comando+=rutaA;
+    comando+="/";
+    comando+=nombreA;
+    comando+=".jpg";
+    char* comandoc = new char[comando.length()];
+    strcpy(comandoc,comando.c_str());
+    system(comandoc); //Renderizando
+    
+    cout<<"¡Reporte generado con éxito!"<<endl;
+    }
+    else{
+        cout<<"Error: El journaling no está disponible para el sistema de archivos EXT2"<<endl;
+    }
+    }
+    else{
+        cout<<"Error: No se puede graficar el reporte"<<endl;
+    }
+
+}
+
 void rep(char* parametros){
     bool fname=false;
     bool fpath = false;
@@ -2365,6 +2857,18 @@ void rep(char* parametros){
         }
         else if(strcasecmp(namec,"disk")==0){
             repDisk(path,id);
+        }
+        else if(strcasecmp(namec,"sb")==0){
+            repSb(path,id);
+        }
+        else if(strcasecmp(namec,"bm_inode")==0){
+            repBmInode(path,id);
+        }
+        else if(strcasecmp(namec,"bm_block")==0){
+            repBmBlock(path, id);
+        }
+        else if(strcasecmp(namec,"journaling")==0){
+            repJournaling(path, id);
         }
         else{
             cout<<"Error: Nombre de reporte inválido"<<endl;
@@ -3030,8 +3534,8 @@ void mkfs(char* parametros){
             fid=true;
         }
         else if(tipo==">type"){
-            const char* ctipo = tipo.c_str();
-            if(strcasecmp(ctipo,"full")==0){
+            const char* cvalor = valor.c_str();
+            if(strcasecmp(cvalor,"full")==0){
                 ftype=true;
             }
             else{
@@ -3039,7 +3543,7 @@ void mkfs(char* parametros){
             }
         }
         else if(tipo==">fs"){
-            const char* cfs = tipo.c_str();
+            const char* cfs = valor.c_str();
             if(strcasecmp(cfs,"2fs")==0){
                 fs = '2';
                 ffs=true;

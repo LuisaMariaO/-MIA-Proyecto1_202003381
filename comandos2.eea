@@ -22,6 +22,9 @@ mount >path=/home/luisa/archivos/Discos/Disco1.dk >name=Part1 #811Disco1
 mkfs >type=full >id=811Disco1 >fs=3fs
 
 #>>>>>>>>>>>>>>>>>>>>>>>>REPORTES 1>>>>>>>>>>>>>>>>
-rep >id=581a >path="/home/luisa/archivos/reportes/reporte1_sb.jpg" >name=sb
+rep >id=811Disco1 >path="/home/luisa/archivos/reportes/reporte1_sb.jpg" >name=sb
+rep >id=811Disco1 >path="/home/luisa/archivos/reportes/reporte1_bmi.txt" >name=bm_inode
+rep >id=811Disco1 >path="/home/luisa/archivos/reportes/reporte1_bmb.txt" >name=bm_block
+rep >id=811Disco1 >path="/home/luisa/archivos/reportes/reporte1_journaling.jpg" >name=journaling
 rep >id=581a >path="/home/luisa/archivos/reportes/reporte1_tree.jpg" >name=tree
 pause

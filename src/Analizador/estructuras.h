@@ -100,9 +100,9 @@ typedef struct
 typedef struct
 {
     int no=0;
-    char accion[20];
-    char nombre[64];
-    char archivoDestino[20];
-    char contenido[25];
+    char accion[20]="";
+    char nombre[64]="";
+    char archivoDestino[20]="";
+    char contenido[25]="";
     time_t fecha;
 }Journaling;
