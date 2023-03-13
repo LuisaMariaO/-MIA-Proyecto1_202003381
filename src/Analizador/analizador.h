@@ -59,3 +59,4 @@ void repSb(string path, string id);
 void repBmInode(string path, string id);
 void repBmBlock(string path, string id);
 void repJournaling(string path, string id);
+void repFile(string path, string id, string rutaFs);

@@ -22,7 +22,7 @@ map <string, int>::iterator it2;
 /*<nombreDisco,ruta>*/
 map <string,string> rutas;
 
-
+ list<string> lista_ruta;
 //lista.push_back("Hola","Adios");
 //montadas["Hola"] = lista;
 //map <string,list<pair<string,string>>>::iterator it;
@@ -2805,6 +2805,162 @@ void repJournaling(string path, string id){
 
 }
 
+void repFile(string path, string id, string rutaFs){
+    //Reporte de archivos creados en el sistema de archivos
+    bool graficar=true;
+
+    SuperBloque superbloque;
+    
+    
+    string rutaS;
+    string nameS;
+    int inicioParticion;
+    
+
+    //Primero reviso si el id de la partición existe
+    it = montadas.find(id);
+    if(it!=montadas.end()){
+        //Si la encontró
+      
+        rutaS=it->second; //Ruta del disco
+        it = nombres.find(id);
+        if(it!=nombres.end()){
+            nameS = it->second; //Nombre de la partición
+            it2 = inicios.find(id);
+            if(it2!=inicios.end()){
+                inicioParticion=it2->second;
+            }
+        }
+
+    }
+    else{
+        cout<<"Error: No se encontró el id"<<endl;
+        graficar=false;
+    }
+    if(graficar){
+  //  int length = rutaS.length();
+    const char* ruta= rutaS.c_str();
+    //strcpy(ruta,rutaS.c_str());
+    
+
+    const char* pathc = path.c_str();
+    ofstream file(pathc);
+    if(!file){
+        cout<<"Error al generar el archivo"<<endl;
+        return;
+    }
+    FILE *archivo= fopen(ruta,"rb+");
+    fseek(archivo,inicioParticion,SEEK_SET);
+    fread(&superbloque, sizeof(SuperBloque),1,archivo);
+    //Muevo el puntero al inicio de los inodos, para buscar el inodo raiz
+    fseek(archivo,superbloque.s_inode_start,SEEK_SET);
+    Inodo inodo; 
+    fread(&inodo,sizeof(Inodo),1,archivo);
+
+    //Hago una lista con los dferentes directorios
+    char *rutafsc = new char [rutaFs.length()];
+    strcpy(rutafsc,rutaFs.c_str());
+    char *direccion = strtok(rutafsc,"/");
+    lista_ruta.clear();
+    while(direccion!=NULL){
+
+        lista_ruta.push_back(direccion);
+        direccion = strtok(NULL, "/");
+    }
+    BloqueCarpeta carpeta;
+    int pos=0;
+    bool finded=false; //Para determinar si se encontró o no
+    /*Primero voy a encontrar la carpeta que contiene al archivo*/
+    if(rutafsc[0]=='/'){ //Si no empieza con la raiz, la ruta está mal
+        while(!lista_ruta.empty()){
+        if(inodo.i_type=='0'){//Si es carpeta
+            for(int i=0; i<15; i++){ //recorro los apuntadores
+                if(inodo.i_block[i]!=-1){//Si está ocupado
+                    if(i<12){ //Bloques directos
+                        fseek(archivo,inodo.i_block[i],SEEK_SET);
+                        fread(&carpeta,sizeof(BloqueCarpeta),1,archivo);
+
+                        if(carpeta.b_content[2].b_name==lista_ruta.front()){
+                            lista_ruta.pop_front();
+                            if(lista_ruta.empty()){
+                                //Si ya se encontraron todos los directorios, doy por encontrada la carpeta
+                                finded=true;
+                                pos=2;
+                                break;
+                            }
+                            else{
+                                fseek(archivo,carpeta.b_content[2].b_inodo,SEEK_SET); //Me muevo al inodo del apuntador
+                                fread(&inodo,sizeof(Inodo),1,archivo);
+                                break;
+                            }
+                        }
+                        else if(carpeta.b_content[3].b_name==lista_ruta.front()){
+                             lista_ruta.pop_front();
+                            if(lista_ruta.empty()){
+                                //Si ya se encontraron todos los directorios, doy por encontrada la carpeta
+                                finded=true;
+                                pos=3;
+                                break;
+                            }
+                            else{
+                                fseek(archivo,carpeta.b_content[2].b_inodo,SEEK_SET); //Me muevo al inodo del apuntador
+                                fread(&inodo,sizeof(Inodo),1,archivo);
+                                break;
+                            }
+                        }
+
+
+                    }
+                }
+
+              if(i==14 && !finded){
+                //Si ya se llegó al final y no se ha encontrado la dirección, no será encontrada
+                cout<<"Error: No se encontró la ruta del archivo a reportar"<<endl;
+                lista_ruta.clear(); //Limpio la lista para que se salga del while
+              } 
+            }
+        }
+    }
+    }
+
+    
+    
+    
+
+    
+   
+   if(finded){
+    //Ahora que encontré la carpeta, me muevo al archivo correspondiente
+    fseek(archivo,carpeta.b_content[pos].b_inodo,SEEK_SET);
+    fread(&inodo,sizeof(Inodo),1,archivo);
+    BloqueArchivos bloquea;
+    for(int i=0; i<15; i++){
+        if(inodo.i_block[i]!=-1){
+            fseek(archivo,inodo.i_block[i],SEEK_SET);
+            fread(&bloquea,sizeof(BloqueArchivos),1,archivo);
+            file<<bloquea.b_content;
+        }
+    }
+
+    cout<<"¡Reporte generado correctamente!"<<endl;
+    file.close(); //Ciero el archivo
+
+    fclose(archivo);
+   }
+   else{
+    cout<<"Error: No se encontró el archivo"<<endl;
+   }
+    
+      
+
+    }
+    else{
+        cout<<"Error: No se puede generar el reporte"<<endl;
+    }
+}
+
+
+
 void rep(char* parametros){
     bool fname=false;
     bool fpath = false;
@@ -2814,6 +2970,7 @@ void rep(char* parametros){
     string name;
     string path;
     string id;
+    string ruta;
     parametros = strtok(NULL," ");
     while (parametros!=NULL){
         string tmp = parametros;
@@ -2835,6 +2992,8 @@ void rep(char* parametros){
         }
 
         else if(tipo==">ruta"){
+            valor = regresarEspacio(valor);
+            ruta=valor;
             fruta=true;
         }
         else if(tipo[0]=='#'){
@@ -2869,6 +3028,14 @@ void rep(char* parametros){
         }
         else if(strcasecmp(namec,"journaling")==0){
             repJournaling(path, id);
+        }
+        else if(strcasecmp(namec,"file")==0){
+            if(fruta){
+                repFile(path,id,ruta);
+            }
+            else{
+                cout<<"Error: Falta el parámetro >ruta"<<endl;
+            }
         }
         else{
             cout<<"Error: Nombre de reporte inválido"<<endl;
@@ -3049,7 +3216,7 @@ void formatear(string id, char fs){
                     strcpy(barchivo.b_content,"1,G,root\n1,U,root,root,123\n");
 
                     //Asocio el inodo de archivo con el bloque de archivo
-                    iarchivo.i_block[0] = prExt.part_start + sizeof(SuperBloque) + sizeof(Journaling) + inodos + bloques + (inodos * sizeof(Inodo)) + sizeof(BloqueArchivos);
+                    iarchivo.i_block[0] = prExt.part_start + sizeof(SuperBloque) + (journaling*sizeof(Journaling)) + inodos + bloques + (inodos * sizeof(Inodo)) + sizeof(BloqueArchivos);
 
                     
               
@@ -3300,8 +3467,7 @@ void formatear(string id, char fs){
                     strcpy(barchivo.b_content,"1,G,root\n1,U,root,root,123\n");
 
                     //Asocio el inodo de archivo con el bloque de archivo
-                    iarchivo.i_block[0] = logica.part_start + sizeof(SuperBloque) + sizeof(Journaling) + inodos + bloques + (inodos * sizeof(Inodo)) + sizeof(BloqueArchivos);
-
+                    iarchivo.i_block[0] = prExt.part_start + sizeof(SuperBloque) + (journaling*sizeof(Journaling)) + inodos + bloques + (inodos * sizeof(Inodo)) + sizeof(BloqueArchivos);
                     
               
                     superbloque.s_filesystem_type=3;
