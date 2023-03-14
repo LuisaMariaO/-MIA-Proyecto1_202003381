@@ -3064,15 +3064,139 @@ void repTree(string path, string id){
 string recorrer(Inodo raiz, FILE* archivo, string nombreNodo){
     BloqueCarpeta carpeta;
     BloqueArchivos barchivo;
+    BloqueApuntadores bapuntador;
     string nombreNodo2;
     Inodo inodo;
+    Inodo inodoi;
     arbol+="\n";
     for(int i=0; i<15;i++){
         //Grafico el bloque correspondiente y busco el inodo siguiente
         if(raiz.i_block[i]!=-1){//Si está ocupado
-            if(i<12){//Si es apuntador directo
             //Leo el bloque
             if(raiz.i_type=='0'){ //Si es carpeta
+                if(i==12){
+                    //Si es apuntador simple indirecto
+                    fseek(archivo,raiz.i_block[i],SEEK_SET);
+                    fread(&bapuntador,sizeof(BloqueApuntadores),1,archivo);
+
+                    nombreNodo2 = to_string(raiz.i_block[i]);
+                    arbol+=nombreNodo2;
+                    arbol+="[shape=block label=\"Bloque de Apuntadores\" style=filled fillcolor=\"#7D31F8\"]\n";
+                    for(int k=0; k<16; k++){
+                        if(bapuntador.b_content[k]!=-1){//Si está ocupado
+                            conexiones+=nombreNodo2;
+                            conexiones+="->";
+                            conexiones+=to_string(bapuntador.b_content[k]);
+                            conexiones+"\n";
+                            //Busco el inodo al que apunta esta posición del bloque
+                            fseek(archivo,bapuntador.b_content[k],SEEK_SET);
+                            fread(&inodoi,sizeof(Inodo),1,archivo);
+                            nombreNodo2 = to_string(bapuntador.b_content[k]);
+                            //Acá debo graficar el bloque de carpeta
+
+                            
+
+
+
+                        }
+                    }
+
+                }
+                else if(i==13){
+                    //Si es apuntador doble indirecto
+                    fseek(archivo,raiz.i_block[i],SEEK_SET);
+                    fread(&bapuntador,sizeof(BloqueApuntadores),1,archivo);
+
+                    nombreNodo2 = to_string(raiz.i_block[i]);
+                    
+                    arbol+=nombreNodo2;
+                    arbol+="[shape=block label=\"Bloque de Apuntadores\" style=filled fillcolor=\"#7D31F8\"]\n";
+                    
+                    for(int k=0; k<16; k++){
+                        if(bapuntador.b_content[k]!=-1){//Si está ocupado
+                            conexiones+=nombreNodo2;
+                            conexiones+="->";
+                            conexiones+=to_string(bapuntador.b_content[k]);
+                            conexiones+"\n";
+                            //Leo el siguiente bloque de apuntadores
+                            fseek(archivo,bapuntador.b_content[k],SEEK_SET);
+                            fread(&bapuntador,sizeof(BloqueApuntadores),1,SEEK_SET);
+                            nombreNodo2 = to_string(bapuntador.b_content[k]);
+                            arbol+=nombreNodo2;
+                            arbol+="[shape=block label=\"Bloque de Apuntadores\" style=filled fillcolor=\"#7D31F8\"]\n";
+
+                            for(int a=0; a<16; a++){
+                                if(bapuntador.b_content[a]!=-1){
+                                conexiones+=nombreNodo2;
+                                conexiones+="->";
+                                conexiones+=to_string(bapuntador.b_content[a]);
+                                conexiones+"\n";
+                                //Leo el inodo al que apunta
+                                fseek(archivo,bapuntador.b_content[a],SEEK_SET);
+                                fread(&inodoi,sizeof(Inodo),1,archivo);
+                                nombreNodo2 = to_string(bapuntador.b_content[a]);
+                                recorrer(inodoi,archivo,nombreNodo2);
+                            }
+                            }
+                        }
+                    }
+                }
+                else if(i==14){
+                    //Si es apuntador triple indirecto
+                    fseek(archivo,raiz.i_block[i],SEEK_SET);
+                    fread(&bapuntador,sizeof(BloqueApuntadores),1,archivo);
+
+                    nombreNodo2 = to_string(raiz.i_block[i]);
+                    
+                    arbol+=nombreNodo2;
+                    arbol+="[shape=block label=\"Bloque de Apuntadores\" style=filled fillcolor=\"#7D31F8\"]\n";
+                    
+                    for(int k=0; k<16; k++){
+                        if(bapuntador.b_content[k]!=-1){//Si está ocupado
+                            conexiones+=nombreNodo2;
+                            conexiones+="->";
+                            conexiones+=to_string(bapuntador.b_content[k]);
+                            conexiones+"\n";
+                            //Leo el siguiente bloque de apuntadores
+                            fseek(archivo,bapuntador.b_content[k],SEEK_SET);
+                            fread(&bapuntador,sizeof(BloqueApuntadores),1,SEEK_SET);
+                            nombreNodo2 = to_string(bapuntador.b_content[k]);
+                            arbol+=nombreNodo2;
+                            arbol+="[shape=block label=\"Bloque de Apuntadores\" style=filled fillcolor=\"#7D31F8\"]\n";
+
+                            for(int a=0; a<16; a++){
+                                if(bapuntador.b_content[a]!=-1){
+                                conexiones+=nombreNodo2;
+                                conexiones+="->";
+                                conexiones+=to_string(bapuntador.b_content[a]);
+                                conexiones+"\n";
+                                //Leo el siguiente bloque de apuntadores
+                                fseek(archivo,bapuntador.b_content[a],SEEK_SET);
+                                fread(&bapuntador,sizeof(BloqueApuntadores),1,SEEK_SET);
+                                nombreNodo2 = to_string(bapuntador.b_content[a]);
+                                arbol+=nombreNodo2;
+                                arbol+="[shape=block label=\"Bloque de Apuntadores\" style=filled fillcolor=\"#7D31F8\"]\n";
+                                for(int b=0; b<16; b++){
+                                    if(bapuntador.b_content[b]!=-1){//Si está ocupado
+                                        conexiones+=nombreNodo2;
+                                        conexiones+="->";
+                                        conexiones+=to_string(bapuntador.b_content[b]);
+                                        conexiones+"\n";
+                                        //Leo el inodo al que apunta
+                                        fseek(archivo,bapuntador.b_content[b],SEEK_SET);
+                                        fread(&inodoi,sizeof(Inodo),1,archivo);
+                                        nombreNodo2 = to_string(bapuntador.b_content[b]);
+                                        recorrer(inodoi,archivo,nombreNodo2);
+                                    }
+                                }
+                                
+                            }
+                            }
+                        }
+                    }
+                }
+                else{
+
                 fseek(archivo,raiz.i_block[i],SEEK_SET);
                 fread(&carpeta,sizeof(BloqueCarpeta),1,archivo);
 
@@ -3167,7 +3291,7 @@ string recorrer(Inodo raiz, FILE* archivo, string nombreNodo){
                 }
                 
 
-                
+            }
             }
             else{//Si es archivo
                 fseek(archivo,raiz.i_block[i],SEEK_SET);
@@ -3210,7 +3334,8 @@ string recorrer(Inodo raiz, FILE* archivo, string nombreNodo){
                 arbol+="</TABLE>\n";
                 arbol+=">]\n";
             }
-            }
+            
+           
         }
 
     }
