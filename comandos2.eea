@@ -27,5 +27,6 @@ rep >id=811Disco1 >path="/home/luisa/archivos/reportes/reporte1_bmi.txt" >name=b
 rep >id=811Disco1 >path="/home/luisa/archivos/reportes/reporte1_bmb.txt" >name=bm_block
 rep >id=811Disco1 >path="/home/luisa/archivos/reportes/reporte1_file.txt" >name=file >ruta=/users.txt
 rep >id=811Disco1 >path="/home/luisa/archivos/reportes/reporte1_journaling.jpg" >name=journaling
+rep >id=811Disco1 >path="/home/luisa/archivos/reportes/reporte1_tree.jpg" >name=tree
 rep >id=581a >path="/home/luisa/archivos/reportes/reporte1_tree.jpg" >name=tree
 pause

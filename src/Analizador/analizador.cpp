@@ -27,6 +27,9 @@ map <string,string> rutas;
 //montadas["Hola"] = lista;
 //map <string,list<pair<string,string>>>::iterator it;
 
+/*Para graficar arboles*/
+string arbol="";
+string conexiones="";
 /*Funciones que devuelven el tipo y el valor de un parametro en strings ya en lowercase */
 string get_tipo_parametro(string parametro){
     
@@ -2959,6 +2962,394 @@ void repFile(string path, string id, string rutaFs){
     }
 }
 
+void repTree(string path, string id){
+    //Reporte de superBloque
+    
+    bool graficar=true;
+
+    SuperBloque superbloque;
+    
+    
+    string rutaS;
+    string nameS;
+    int inicioParticion;
+    
+
+    //Primero reviso si el id de la partición existe
+    it = montadas.find(id);
+    if(it!=montadas.end()){
+        //Si la encontró
+      
+        rutaS=it->second; //Ruta del disco
+        it = nombres.find(id);
+        if(it!=nombres.end()){
+            nameS = it->second; //Nombre de la partición
+            it2 = inicios.find(id);
+            if(it2!=inicios.end()){
+                inicioParticion=it2->second;
+            }
+        }
+
+    }
+    else{
+        cout<<"Error: No se encontró el id"<<endl;
+        graficar=false;
+    }
+    if(graficar){
+  //  int length = rutaS.length();
+    const char* ruta= rutaS.c_str();
+    //strcpy(ruta,rutaS.c_str());
+    
+   string rutaDot = getPathWName(path);
+   
+   rutaDot.append("/");
+   rutaDot.append(getFileName(path));
+   rutaDot.append(".dot");
+
+    const char* rDot = rutaDot.c_str();
+    ofstream file(rDot);
+    if(!file){
+        cout<<"Error al generar el archivo"<<endl;
+        return;
+    }
+    arbol="";
+    conexiones="";
+    FILE *archivo= fopen(ruta,"rb+");
+    fseek(archivo,inicioParticion,SEEK_SET);
+    fread(&superbloque, sizeof(SuperBloque),1,archivo);
+    Inodo raiz;
+    string nombreNodo;
+    nombreNodo = to_string(superbloque.s_inode_start);
+    
+    fseek(archivo,superbloque.s_inode_start,SEEK_SET);
+    fread(&raiz, sizeof(Inodo),1,archivo);
+    recorrer(raiz,archivo,nombreNodo);
+
+    
+    
+    file<<"digraph G {\n";
+    file<<"rankdir=\"LR\"\n";
+    file<<arbol;
+    file<<conexiones;
+    file<<"}";
+    
+
+    
+    
+    fclose(archivo);
+
+    
+
+    file.close(); //Ciero el archivo
+    string nombreA = getFileName(path);
+    string rutaA = getPathWName(path);
+    string comando = "dot -Tjpg ";
+    comando+=rutaDot;
+    comando+=" -o ";
+    comando+=rutaA;
+    comando+="/";
+    comando+=nombreA;
+    comando+=".jpg";
+    char* comandoc = new char[comando.length()];
+    strcpy(comandoc,comando.c_str());
+    system(comandoc); //Renderizando
+    
+    cout<<"¡Reporte generado con éxito!"<<endl;
+    }
+    else{
+        cout<<"Error: No se puede graficar el reporte"<<endl;
+    }
+}
+
+string recorrer(Inodo raiz, FILE* archivo, string nombreNodo){
+    BloqueCarpeta carpeta;
+    BloqueArchivos barchivo;
+    string nombreNodo2;
+    Inodo inodo;
+    arbol+="\n";
+    for(int i=0; i<15;i++){
+        //Grafico el bloque correspondiente y busco el inodo siguiente
+        if(raiz.i_block[i]!=-1){//Si está ocupado
+            if(i<12){//Si es apuntador directo
+            //Leo el bloque
+            if(raiz.i_type=='0'){ //Si es carpeta
+                fseek(archivo,raiz.i_block[i],SEEK_SET);
+                fread(&carpeta,sizeof(BloqueCarpeta),1,archivo);
+
+                nombreNodo2 = to_string(raiz.i_block[i]);
+
+                arbol.append (nombreNodo2);
+                arbol.append ("[shape=none label=<\n");
+                arbol+="<TABLE cellspacing=\"0\" cellpadding=\"0\">\n";
+                arbol+="<TR>\n";
+                arbol+="<TD bgcolor=";
+                arbol+="\"#FF0093 \"";
+                arbol+=">Bloque de carpeta</TD>\n";
+                arbol+="<TD bgcolor=";
+                arbol+="\"#FF0093 \"";
+                arbol+="></TD>\n";
+                arbol+="</TR>\n";
+
+                arbol+="<TR>\n";
+                arbol+="<TD bgcolor=";
+                arbol+="\"#FA8CCB\"";
+                arbol+=">b_name</TD>\n";
+                arbol+="<TD bgcolor=";
+                arbol+="\"#FA8CCB \"";
+                arbol+=">";
+                arbol+=carpeta.b_content[0].b_name;
+                arbol+="</TD>\n";
+                arbol+="</TR>\n";
+
+                arbol+="<TR>\n";
+                arbol+="<TD bgcolor=";
+                arbol+="\"#FA8CCB\"";
+                arbol+=">b_name</TD>\n";
+                arbol+="<TD bgcolor=";
+                arbol+="\"#FA8CCB \"";
+                arbol+=">";
+                arbol+=carpeta.b_content[1].b_name;
+                arbol+="</TD>\n";
+                arbol+="</TR>\n";
+
+                arbol+="<TR>\n";
+                arbol+="<TD bgcolor=";
+                arbol+="\"#FA8CCB\"";
+                arbol+=">b_name</TD>\n";
+                arbol+="<TD bgcolor=";
+                arbol+="\"#FA8CCB \"";
+                arbol+=">";
+                arbol+=carpeta.b_content[2].b_name;
+                arbol+="</TD>\n";
+                arbol+="</TR>\n";
+
+                arbol+="<TR>\n";
+                arbol+="<TD bgcolor=";
+                arbol+="\"#FA8CCB\"";
+                arbol+=">b_name</TD>\n";
+                arbol+="<TD bgcolor=";
+                arbol+="\"#FA8CCB \"";
+                arbol+=">";
+                arbol+=carpeta.b_content[3].b_name;
+                arbol+="</TD>\n";
+                arbol+="</TR>\n";
+
+                arbol+="</TABLE>\n";
+                arbol+=">]\n";
+                if(i<=2){//Para no regresar a la raiz
+                    for(int j=2; j<4 ; j++){
+                        
+                        if(carpeta.b_content[j].b_inodo!=-1){
+                            conexiones+=nombreNodo2;
+                            conexiones+="->";
+                            conexiones+=to_string(carpeta.b_content[j].b_inodo);
+                            conexiones+="\n";
+                            fseek(archivo,carpeta.b_content[j].b_inodo,SEEK_SET);
+                            fread(&inodo,sizeof(Inodo),1,archivo);
+                            nombreNodo2 = to_string(carpeta.b_content[j].b_inodo);
+                            recorrer(inodo,archivo,nombreNodo2);
+                        }
+                    }
+                }
+                else{
+                    for(int j=0; j<4 ; j++){
+                        if(carpeta.b_content[j].b_inodo!=-1){
+                            conexiones+=nombreNodo2;
+                            conexiones+="->";
+                            conexiones+=to_string(carpeta.b_content[j].b_inodo);
+                            conexiones+="\n";
+                            fseek(archivo,carpeta.b_content[j].b_inodo,SEEK_SET);
+                            fread(&inodo,sizeof(Inodo),1,archivo);
+                            nombreNodo2 = to_string(carpeta.b_content[j].b_inodo);
+                            recorrer(inodo,archivo,nombreNodo2);
+                        }
+                    }
+                }
+                
+
+                
+            }
+            else{//Si es archivo
+                fseek(archivo,raiz.i_block[i],SEEK_SET);
+                fread(&barchivo,sizeof(BloqueArchivos),1,archivo);
+                nombreNodo2 = to_string(raiz.i_block[i]);
+
+                arbol.append (nombreNodo2);
+                arbol.append ("[shape=none label=<\n");
+                arbol+="<TABLE cellspacing=\"0\" cellpadding=\"0\">\n";
+                arbol+="<TR>\n";
+                arbol+="<TD bgcolor=";
+                arbol+="\"#FFF000\"";
+                arbol+=">Bloque de archivo</TD>\n";
+                arbol+="<TD bgcolor=";
+                arbol+="\"#FFF000\"";
+                arbol+="></TD>\n";
+                arbol+="</TR>\n";
+
+                arbol+="<TR>\n";
+                arbol+="<TD bgcolor=";
+                arbol+="\"#FFF66C\"";
+                arbol+=">";
+                string contenido="";
+                
+                for(int k=0; k<64; k++){
+                    if(barchivo.b_content[k]=='\n'){
+                        arbol+="<BR></BR>";
+                    }
+                    else if(barchivo.b_content[k]<32 || barchivo.b_content[k]>126){
+                        //No pasa nada
+                    }
+                    else{
+                        arbol+=barchivo.b_content[k];
+                    }
+                }
+                //arbol+=barchivo.b_content;
+                arbol+="</TD>\n";
+                arbol+="</TR>\n";
+
+                arbol+="</TABLE>\n";
+                arbol+=">]\n";
+            }
+            }
+        }
+
+    }
+
+    //Grafico el inodo actual
+    arbol.append (nombreNodo);
+    arbol.append ("[shape=none label=<\n");
+    arbol+="<TABLE cellspacing=\"0\" cellpadding=\"0\">\n";
+    arbol+="<TR>\n";
+    arbol+="<TD bgcolor=";
+    arbol+="\"#00C9FF\"";
+    arbol+="> Inodo</TD>\n";
+    arbol+="<TD bgcolor=";
+    arbol+="\"#00C9FF\"";
+    arbol+="></TD>\n";
+    arbol+="</TR>\n";
+
+    arbol+="<TR>\n";
+    arbol+="<TD bgcolor=";
+    arbol+="\"#64DEFF\"";
+    arbol+=">i_uid</TD>\n";
+    arbol+="<TD bgcolor=";
+    arbol+="\"#64DEFF \"";
+    arbol+=">"+to_string(raiz.i_uid);
+    arbol+="</TD>\n";
+    arbol+="</TR>\n";
+
+    arbol+="<TR>\n";
+    arbol+="<TD bgcolor=";
+    arbol+="\"#64DEFF\"";
+    arbol+=">i_gid</TD>\n";
+    arbol+="<TD bgcolor=";
+    arbol+="\"#64DEFF \"";
+    arbol+=">"+to_string(raiz.i_gid);
+    arbol+="</TD>\n";
+    arbol+="</TR>\n";
+
+    arbol+="<TR>\n";
+    arbol+="<TD bgcolor=";
+    arbol+="\"#64DEFF\"";
+    arbol+=">i_s</TD>\n";
+    arbol+="<TD bgcolor=";
+    arbol+="\"#64DEFF \"";
+    arbol+=">"+to_string(raiz.i_s);
+    arbol+="</TD>\n";
+    arbol+="</TR>\n";
+
+    tm *ltm = localtime(&raiz.i_atime);
+    arbol+="<TR>\n";
+    arbol+="<TD bgcolor=";
+    arbol+="\"#64DEFF\"";
+    arbol+=">i_atime</TD>\n";
+    arbol+="<TD bgcolor=";
+    arbol+="\"#64DEFF\"";
+    arbol+=">"+to_string(ltm->tm_mday);
+    arbol+="-"+to_string(1+ltm->tm_mon);
+    arbol+="-"+to_string(1900+ltm->tm_year);
+    arbol+=" "+to_string(ltm->tm_hour);
+    arbol+=":"+to_string(ltm->tm_min);
+    arbol+=":"+to_string(ltm->tm_sec);
+    arbol+="</TD>\n";
+    arbol+="</TR>\n";
+
+
+    tm *ltm2 = localtime(&raiz.i_ctime);
+    arbol+="<TR>\n";
+    arbol+="<TD bgcolor=";
+    arbol+="\"#64DEFF\"";
+    arbol+=">i_ctime</TD>\n";
+    arbol+="<TD bgcolor=";
+    arbol+="\"#64DEFF\"";
+    arbol+=">"+to_string(ltm2->tm_mday);
+    arbol+="-"+to_string(1+ltm2->tm_mon);
+    arbol+="-"+to_string(1900+ltm2->tm_year);
+    arbol+=" "+to_string(ltm2->tm_hour);
+    arbol+=":"+to_string(ltm2->tm_min);
+    arbol+=":"+to_string(ltm2->tm_sec);
+    arbol+="</TD>\n";
+    arbol+="</TR>\n";
+
+    tm *ltm3 = localtime(&raiz.i_mtime);
+    arbol+="<TR>\n";
+    arbol+="<TD bgcolor=";
+    arbol+="\"#64DEFF\"";
+    arbol+=">i_mtime</TD>\n";
+    arbol+="<TD bgcolor=";
+    arbol+="\"#64DEFF\"";
+    arbol+=">"+to_string(ltm3->tm_mday);
+    arbol+="-"+to_string(1+ltm3->tm_mon);
+    arbol+="-"+to_string(1900+ltm3->tm_year);
+    arbol+=" "+to_string(ltm3->tm_hour);
+    arbol+=":"+to_string(ltm3->tm_min);
+    arbol+=":"+to_string(ltm3->tm_sec);
+    arbol+="</TD>\n";
+    arbol+="</TR>\n";
+
+    arbol+="<TR>\n";
+    arbol+="<TD bgcolor=";
+    arbol+="\"#64DEFF\"";
+    arbol+=">i_type</TD>\n";
+    arbol+="<TD bgcolor=";
+    arbol+="\"#64DEFF\"";
+    arbol+=">";
+    if(raiz.i_type=='0'){
+        arbol+="0";
+    }
+    else{
+        arbol+="1";
+    }
+   
+    arbol+="</TD>\n";
+    arbol+="</TR>\n";
+
+    arbol+="<TR>\n";
+    arbol+="<TD bgcolor=";
+    arbol+="\"#64DEFF\"";
+    arbol+=">i_perm</TD>\n";
+    arbol+="<TD bgcolor=";
+    arbol+="\"#64DEFF \"";
+    arbol+=">"+to_string(raiz.i_perm);
+    arbol+="</TD>\n";
+    arbol+="</TR>\n";
+
+    for(int i=0; i<15; i++){
+        if(raiz.i_block[i]!=-1){
+            conexiones+=nombreNodo; //Los nombres de los nodos será su dirección en disco
+            conexiones+="->";
+            conexiones+=to_string(raiz.i_block[i]);
+            conexiones+="\n";
+        }
+    }
+    
+ 
+
+    arbol+="</TABLE>\n";
+    arbol+=">]\n";
+    return arbol;
+}
+
 
 
 void rep(char* parametros){
@@ -3036,6 +3427,9 @@ void rep(char* parametros){
             else{
                 cout<<"Error: Falta el parámetro >ruta"<<endl;
             }
+        }
+        else if(strcasecmp(namec,"tree")==0){
+            repTree(path,id);
         }
         else{
             cout<<"Error: Nombre de reporte inválido"<<endl;

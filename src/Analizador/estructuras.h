@@ -78,7 +78,7 @@ typedef struct
 
 typedef struct
 {
-    char b_name[12]; //Nombre de la carpeta o archivo
+    char b_name[12]=""; //Nombre de la carpeta o archivo
     int b_inodo=-1; //Apuntador hacia un inodo asociado al archivo o carpeta
 }Content;
 
@@ -89,7 +89,7 @@ typedef struct
 
 typedef struct
 {
-    char b_content[64]; //Array con el contenido del archivo
+    char b_content[64]={0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0}; //Array con el contenido del archivo
 }BloqueArchivos;
 
 typedef struct
