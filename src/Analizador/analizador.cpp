@@ -4845,10 +4845,12 @@ void login(char* parametros){
             fid=true;
         }
         else if(tipo==">pass"){
+            valor = regresarEspacio(valor);
             pass = valor;
             fpass=true;
         }
         else if(tipo==">user"){
+            valor = regresarEspacio(valor);
             user=valor;
             fuser=true;
         }
@@ -4871,6 +4873,22 @@ void login(char* parametros){
         cout<<"Parámetros insuficientes para realizar una acción"<<endl;
     }
     cout<<"\n";
+}
+
+void logout(){
+if(logged){
+    //Si ya hay una sesión iniciada
+    user="";
+    idl="";
+    grupo="";
+    uid="";
+    logged=false;
+    cout<<"¡Sesión cerrada!"<<endl;
+}
+else{
+    cout<<"Error: No existe una sesión iniciada"<<endl;
+}
+cout<<"\n";
 }
 
 /*Funcion que define que comando es el que hay que ejecutar*/
@@ -4914,12 +4932,15 @@ void analizar(char *comando) {
     else if(strcasecmp(token,"login")==0){
         login(token);
     }
+    else if(strcasecmp(token,"logout")==0){
+        logout();
+    }
     else if (token[0]=='#'){
         //Si es un comentario, no pasa nada
 
     }
     else {
-        cout << "Error: Comando no aceptado" << endl;
+        cout << "Error: Comando no aceptado\n" << endl;
     }
     
 }

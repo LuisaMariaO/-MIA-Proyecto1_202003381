@@ -65,3 +65,5 @@ string recorrer(Inodo raiz, FILE* archivo, string nombreNodo);
 
 void login(char* parametros);
 void iniciarSesion(string user, string pass, string id);
+
+void logout();
