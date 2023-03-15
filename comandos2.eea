@@ -30,3 +30,6 @@ rep >id=811Disco1 >path="/home/luisa/archivos/reportes/reporte1_journaling.jpg" 
 rep >id=811Disco1 >path="/home/luisa/archivos/reportes/reporte1_tree.jpg" >name=tree
 rep >id=581a >path="/home/luisa/archivos/reportes/reporte1_tree.jpg" >name=tree
 pause
+
+#LOGIN
+login >user=root >pass=123 >id=811Disco1

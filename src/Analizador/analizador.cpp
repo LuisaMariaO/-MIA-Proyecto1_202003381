@@ -30,6 +30,11 @@ map <string,string> rutas;
 /*Para graficar arboles*/
 string arbol="";
 string conexiones="";
+string user=""; //Usuario loggeado
+string uid="";
+string idl=""; //Id de la partición del usuario loggeado
+string grupo=""; //Grupo del usuario loggeado
+bool logged=false; //Para saber si hay una sesión iniciada
 /*Funciones que devuelven el tipo y el valor de un parametro en strings ya en lowercase */
 string get_tipo_parametro(string parametro){
     
@@ -4697,6 +4702,177 @@ void mkfs(char* parametros){
     cout<<"\n";
 }
 
+void iniciarSesion(string user, string pass, string id){
+    if(!logged){
+    it = montadas.find(id);
+    bool encontrado = false;
+    string agrupo="";
+    string auser="";
+    string apass="";
+    string auid="";
+    if(it!=montadas.end()){
+        //Si la encuentro, la elimino
+        const char* rutac = it->second.c_str();
+        FILE* archivo =fopen(rutac,"rb+"); //Abro el archivo
+        //Pero primero registro la fecha en que se está desmontando el sistema
+        it2 = inicios.find(id);
+        if(it2!=inicios.end()){
+            Inodo inodo;
+            
+            BloqueArchivos barchivo;
+
+            fseek(archivo,it2->second,SEEK_SET); //Me muevo al inicio de la particion
+            SuperBloque superbloque;
+            fread(&superbloque,sizeof(SuperBloque),1,archivo);
+
+            //Busco el inodo del users.txt, el cuál ya sé que es el segundo inodo en el bitmap
+            fseek(archivo,(superbloque.s_inode_start+sizeof(Inodo)),SEEK_SET);
+            fread(&inodo,sizeof(Inodo),1,archivo);
+
+            for(int i=0; i<16; i++){
+                list<string> lineas; //Para separar en líneas
+                list<string> linea; //Para separar la línea por comas
+                char* token;
+                if(i==12){
+
+                }
+                else if(i==13){
+
+                }
+                else if(i==14){
+
+                }
+                else{
+                    if(inodo.i_block[i]!=-1){
+                     
+                        fseek(archivo,inodo.i_block[i],SEEK_SET);
+                        fread(&barchivo,sizeof(BloqueArchivos),1,archivo);
+                        token = strtok(barchivo.b_content,"\n");
+                        while(token!=NULL){
+                            lineas.push_back(token);
+                            token = strtok(NULL,"\n");
+                        }
+                        //Ya que tengo las líneas, las itero para ver los campos de cada línea
+                        while(!lineas.empty()){
+                            char* frente = new char[lineas.front().length()];
+                            strcpy (frente,lineas.front().c_str());
+                            token = strtok(frente,",");
+                            while(token!=NULL){
+                                linea.push_back(token);
+                                token=strtok(NULL,",");
+                            }
+                            while(!linea.empty()){
+                                auid=linea.front(); //GUI o UID
+                                linea.pop_front();
+
+                                if(linea.front()=="G"){
+                                    //Si estoy leyendo un grupo, paso a la segunda línea
+                                    linea.clear();
+                                }
+                                else{
+                                    //Estoy leyendo un usuario
+                                    linea.pop_front();
+                                    //Ahora me voy al grupo
+                                    agrupo=linea.front();
+                                    linea.pop_front();
+                                    //Leo el usuario
+                                    auser = linea.front();
+                                    linea.pop_front();
+                                    //Leo la contraseña
+                                    apass=linea.front();
+
+                                    if(user==auser && pass==apass){
+                                        encontrado=true;
+                                        uid=auid;
+                                        idl=id;
+                                        user=auser;
+                                        grupo=agrupo;
+                                    }
+
+                                    linea.clear();
+                                }
+                            }   
+
+                            lineas.pop_front();
+                        }
+
+                    }
+                }
+            }
+            
+       
+        }
+      
+        
+        fclose(archivo);
+
+        if(encontrado){
+            logged=true;
+            cout<<"¡Sesión Iniciada con éxito!"<<endl;
+        }
+        else{
+            cout<<"Error: Usuario o contraseña incorrectos"<<endl;
+        }
+    }
+    else{
+        cout<<"Error: No se encontró el id"<<endl;
+    }
+    }
+    else{
+        cout<<"Error: Ya existe una sesión iniciada en el sistema"<<endl;
+    }
+}
+
+void login(char* parametros){
+    bool fuser = false;
+    bool fpass = false;
+    bool fid = false;
+
+    
+    parametros = strtok(NULL," ");
+
+    string user;
+    string pass;
+    string id;
+    while (parametros!=NULL){
+        string tmp = parametros;
+        string tipo = get_tipo_parametro(tmp);
+        string valor = get_valor_parametro(tmp);
+
+        if(tipo==">id"){
+            valor = regresarEspacio(valor);
+            id=valor;
+            fid=true;
+        }
+        else if(tipo==">pass"){
+            pass = valor;
+            fpass=true;
+        }
+        else if(tipo==">user"){
+            user=valor;
+            fuser=true;
+        }
+        else if(tipo[0] == '#'){
+            //Si viene un comentario, no pasa nada
+            break;
+        }
+        else{
+            
+            cout<<"Parámetro inválido"<<endl;
+        }
+        parametros = strtok(NULL," ");
+        
+    }
+    //Trabajando con los parámetros
+    if(fid && fuser &&fpass){
+        iniciarSesion(user, pass, id);
+    }
+    else{
+        cout<<"Parámetros insuficientes para realizar una acción"<<endl;
+    }
+    cout<<"\n";
+}
+
 /*Funcion que define que comando es el que hay que ejecutar*/
 void analizar(char *comando) {
  
@@ -4734,6 +4910,9 @@ void analizar(char *comando) {
     }
     else if(strcasecmp(token,"mkfs")==0){
         mkfs(token);
+    }
+    else if(strcasecmp(token,"login")==0){
+        login(token);
     }
     else if (token[0]=='#'){
         //Si es un comentario, no pasa nada

@@ -62,3 +62,6 @@ void repJournaling(string path, string id);
 void repFile(string path, string id, string rutaFs);
 void repTree(string path, string id);
 string recorrer(Inodo raiz, FILE* archivo, string nombreNodo);
+
+void login(char* parametros);
+void iniciarSesion(string user, string pass, string id);
