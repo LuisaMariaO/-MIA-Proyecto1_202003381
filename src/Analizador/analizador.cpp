@@ -30,7 +30,7 @@ map <string,string> rutas;
 /*Para graficar arboles*/
 string arbol="";
 string conexiones="";
-string user=""; //Usuario loggeado
+string userl=""; //Usuario loggeado
 string uid="";
 string idl=""; //Id de la partición del usuario loggeado
 string grupo=""; //Grupo del usuario loggeado
@@ -3472,9 +3472,8 @@ string recorrer(Inodo raiz, FILE* archivo, string nombreNodo){
 
                 arbol+="</TABLE>\n";
                 arbol+=">]\n";
-                if(i<=2){//Para no regresar a la raiz
+                if(i==0){//Para no regresar a la raiz
                     for(int j=2; j<4 ; j++){
-                        
                         if(carpeta.b_content[j].b_inodo!=-1){
                             conexiones+=nombreNodo2;
                             conexiones+="->";
@@ -3482,8 +3481,8 @@ string recorrer(Inodo raiz, FILE* archivo, string nombreNodo){
                             conexiones+="\n";
                             fseek(archivo,carpeta.b_content[j].b_inodo,SEEK_SET);
                             fread(&inodo,sizeof(Inodo),1,archivo);
-                            nombreNodo2 = to_string(carpeta.b_content[j].b_inodo);
-                            recorrer(inodo,archivo,nombreNodo2);
+                            //nombreNodo2 = to_string(carpeta.b_content[j].b_inodo);
+                            recorrer(inodo,archivo,to_string(carpeta.b_content[j].b_inodo));
                         }
                     }
                 }
@@ -3496,8 +3495,8 @@ string recorrer(Inodo raiz, FILE* archivo, string nombreNodo){
                             conexiones+="\n";
                             fseek(archivo,carpeta.b_content[j].b_inodo,SEEK_SET);
                             fread(&inodo,sizeof(Inodo),1,archivo);
-                            nombreNodo2 = to_string(carpeta.b_content[j].b_inodo);
-                            recorrer(inodo,archivo,nombreNodo2);
+                            //nombreNodo2 = to_string(carpeta.b_content[j].b_inodo);
+                            recorrer(inodo,archivo,to_string(carpeta.b_content[j].b_inodo));
                         }
                     }
                 }
@@ -4785,7 +4784,7 @@ void iniciarSesion(string user, string pass, string id){
                                         encontrado=true;
                                         uid=auid;
                                         idl=id;
-                                        user=auser;
+                                        userl=auser;
                                         grupo=agrupo;
                                     }
 
@@ -4878,7 +4877,7 @@ void login(char* parametros){
 void logout(){
 if(logged){
     //Si ya hay una sesión iniciada
-    user="";
+    userl="";
     idl="";
     grupo="";
     uid="";
@@ -4889,6 +4888,485 @@ else{
     cout<<"Error: No existe una sesión iniciada"<<endl;
 }
 cout<<"\n";
+}
+
+void crearGrupo(string name){
+    if(logged){
+        string rutaS;
+        //Si ya existe una sesión iniciada
+        cout<<userl<<endl;
+        if(userl=="root"){
+            //Si es el usuario root
+             it = montadas.find(idl);
+        int inicioParticion;
+        bool crear=true;
+        if(it!=montadas.end()){
+            //Si la encontró
+        
+            rutaS=it->second; //Ruta del disco
+            it = nombres.find(idl);
+            if(it!=nombres.end()){
+                it2 = inicios.find(idl);
+                if(it2!=inicios.end()){
+                    inicioParticion = it2->second;
+                }
+            }
+
+    }
+    else{
+        cout<<"Error: No se encontró el id"<<endl;
+        crear=false;
+    }
+    if(crear){
+        SuperBloque superbloque;
+        Inodo inodo;
+        const char* ruta = rutaS.c_str();
+        FILE *archivo= fopen(ruta,"rb+");
+        //Voy a buscar el inodo de users.txt, el cuál sé que está en la posición 2 de la tabla de inodos
+        fseek(archivo,inicioParticion,SEEK_SET);
+        fread(&superbloque,sizeof(SuperBloque),1,archivo);
+
+        fseek(archivo,(superbloque.s_inode_start+sizeof(Inodo)),SEEK_SET);
+        fread(&inodo,sizeof(inodo),1,archivo);
+        BloqueArchivos bloquearchivo;
+        string contenido;
+        for(int i=0; i<12; i++){//Por ahora trabajo con apuntadores directos nada más
+            if(inodo.i_block[i]!=-1){//Si está ocupado
+                fseek(archivo,inodo.i_block[i],SEEK_SET);
+                fread(&bloquearchivo,sizeof(contenido),1,archivo);
+                contenido.append(bloquearchivo.b_content);
+            }
+        }
+
+        list<string> lineas;
+        list<string> linea;
+        bool create=true;
+        
+        char* contenidoc = new char[contenido.length()];
+        strcpy(contenidoc,contenido.c_str());
+        char* iterador = strtok(contenidoc,"\n");
+
+        while(iterador!=NULL){
+            lineas.push_back(iterador);
+            iterador = strtok(NULL,"\n");
+        }
+        int grupos=0;
+        while (!lineas.empty())
+        {
+            linea.clear();
+            char * frente = new char [lineas.front().length()];
+            iterador = strtok(frente,",");
+            while(iterador!=NULL){
+                linea.push_back(iterador);
+                iterador = strtok(NULL,",");
+            }
+
+            linea.pop_front(); //Saco el id
+            if(linea.front()=="G"){
+                //Si es un grupo
+                grupos++;
+
+                linea.pop_front();//Saco G
+                if(name==linea.front()){
+                    cout<<"Error: Ya existe un grupo con ese nombre"<<endl;
+                    create=false;
+                }
+            }            
+
+            lineas.pop_front();
+        }
+
+        if(create){
+            grupos++; //El nuevo id
+            int posicion = contenido.length();
+            int i =0;
+
+
+            while(i<12){
+                if(posicion < 64*(i-1)){
+                    break;
+                }
+            }
+
+            if(inodo.i_block[i]!=-1){
+                strcpy(bloquearchivo.b_content,(bloquearchivo.b_content));
+            }
+            
+        }
+        else{
+            cout<<"Error: No es posible crear el grupo"<<endl;
+        }
+
+
+        
+
+    }
+
+
+        }
+        else{
+            cout<<"Error: Solo el usuario root puede crear grupos"<<endl;
+        }
+    }
+    else{
+        cout<<"Error: No existe una sesión iniciada"<<endl;
+    }
+}
+
+void mkgrp(char* parametros){
+    bool fname=false;
+
+    
+    parametros = strtok(NULL," ");
+
+    string name;
+    while (parametros!=NULL){
+        string tmp = parametros;
+        string tipo = get_tipo_parametro(tmp);
+        string valor = get_valor_parametro(tmp);
+
+        if(tipo==">name"){
+            valor = regresarEspacio(valor);
+            name=valor;
+            fname=true;
+        }
+        else if(tipo[0] == '#'){
+            //Si viene un comentario, no pasa nada
+            break;
+        }
+        else{
+            
+            cout<<"Parámetro inválido"<<endl;
+        }
+        parametros = strtok(NULL," ");
+        
+    }
+    //Trabajando con los parámetros
+    if(fname){
+        crearGrupo(name);
+    }
+    else{
+        cout<<"Parámetros insuficientes para realizar una acción"<<endl;
+    }
+    cout<<"\n";
+}
+
+void crearCarpeta(string path, bool r){
+    if(logged){
+        string rutaS="";
+        //Primero reviso si el id de la partición existe
+        it = montadas.find(idl);
+        int inicioParticion;
+        bool crear=true;
+        if(it!=montadas.end()){
+            //Si la encontró
+        
+            rutaS=it->second; //Ruta del disco
+            it = nombres.find(idl);
+            if(it!=nombres.end()){
+                it2 = inicios.find(idl);
+                if(it2!=inicios.end()){
+                    inicioParticion = it2->second;
+                }
+            }
+
+    }
+    else{
+        cout<<"Error: No se encontró el id"<<endl;
+        crear=false;
+    }
+    if(crear){
+        SuperBloque superbloque;
+        if(r){
+            //Si se van a crear los directorios padre
+        }
+        else{
+            //Si no se van a crear los directorios padre
+            string nombreCarpeta;
+            string padre;
+            const char* ruta = rutaS.c_str();
+            FILE *archivo= fopen(ruta,"rb+");
+            fseek(archivo,inicioParticion,SEEK_SET);
+            fread(&superbloque, sizeof(SuperBloque),1,archivo);
+            //Muevo el puntero al inicio de los inodos, para buscar el inodo raiz
+            fseek(archivo,superbloque.s_inode_start,SEEK_SET);
+            Inodo inodo; 
+            int posinodo;
+            posinodo = superbloque.s_inode_start;
+            fread(&inodo,sizeof(Inodo),1,archivo);
+
+            //Hago una lista con los dferentes directorios
+            char *rutafsc = new char [path.length()];
+            strcpy(rutafsc,path.c_str());
+            char *direccion = strtok(rutafsc,"/");
+            lista_ruta.clear();
+            while(direccion!=NULL){
+
+                lista_ruta.push_back(direccion);
+                direccion = strtok(NULL, "/");
+            }
+            BloqueCarpeta carpeta;
+            
+            int pos=0;
+            bool finded=true; //Para determinar si se encontró o no
+            /*Primero voy a encontrar la carpeta que contiene al archivo*/
+            if(rutafsc[0]=='/'){ //Si no empieza con la raiz, la ruta está mal
+                nombreCarpeta=lista_ruta.back(); //La ultima entrada de la lita corresponde al nombre de la carpeta
+                lista_ruta.pop_back();
+                if(lista_ruta.size()==0){
+                    finded=true;
+                    padre="/";
+
+                }
+                else{
+                padre = lista_ruta.back();
+                }
+                while(!lista_ruta.empty()){
+                if(inodo.i_type=='0'){//Si es carpeta
+                    
+
+                    for(int i=0; i<12; i++){
+                        //Por ahora trabajando con bloques directos nada más
+                        if(inodo.i_block[i]!=-1){
+                        fseek(archivo,inodo.i_block[i],SEEK_SET);
+                        fread(&carpeta,sizeof(BloqueCarpeta),1,archivo);
+                        if(i==0){
+                            if(strcasecmp(carpeta.b_content[2].b_name,lista_ruta.front().c_str())==0){
+                                lista_ruta.pop_front();
+                                fseek(archivo,carpeta.b_content[2].b_inodo,SEEK_SET);
+                                fread(&inodo,sizeof(Inodo),1,archivo);
+                                posinodo = carpeta.b_content[2].b_inodo;
+                                i=12;
+                                break;
+                            }
+                            else if(strcasecmp(carpeta.b_content[3].b_name,lista_ruta.front().c_str())==0){
+                                lista_ruta.pop_front();
+                                fseek(archivo,carpeta.b_content[3].b_inodo,SEEK_SET);
+                                fread(&inodo,sizeof(Inodo),1,archivo);
+                                posinodo = carpeta.b_content[3].b_inodo;
+                                i=12;
+                                break;
+                            }
+                        }
+                        else{
+                            for(int j=0; j<4; j++){
+                                if(strcasecmp(carpeta.b_content[j].b_name,lista_ruta.front().c_str())==0){
+                                    lista_ruta.pop_front();
+                                    fseek(archivo,carpeta.b_content[j].b_inodo,SEEK_SET);
+                                    fread(&inodo,sizeof(Inodo),1,archivo);
+                                    posinodo = carpeta.b_content[j].b_inodo;
+                                    i=12;
+                                    break;
+                                }
+                            }
+                        } 
+
+                        
+                    }   
+                          if(i==11 && !lista_ruta.empty()){
+                            //si ya se llegó al último apuntador y la lista no está vacía, no la encontró
+                            lista_ruta.clear();
+                            finded=false;
+                        }              
+                    }
+                            
+                }
+
+                    
+                    }
+                }
+            
+            
+            
+        
+        if(finded){
+            //Ahora que encontré la carpeta, creo el inodo y bloque correspondientes
+            int poscarpeta;
+
+            //Busco en el inodo de carpeta un espacio para el nuevo inodo
+            for(int i=0; i<12; i++){
+                if(inodo.i_block[i]!=-1){
+                    fseek(archivo,inodo.i_block[i],SEEK_SET);
+                    fread(&carpeta,sizeof(BloqueCarpeta),1,archivo);
+                    poscarpeta = inodo.i_block[i];
+                    
+                    //Busco espacio
+
+                    for(int j=0; j<4;j++){
+                        if(strcmp(carpeta.b_content[j].b_name,"")==0){
+                            //Si está vacío, lo ocupo
+                            strcpy(carpeta.b_content[j].b_name,nombreCarpeta.c_str());
+                            pos=j;
+                            i=11;
+                            break;
+                          
+                        }
+                    }
+                }   
+                else{
+                    //Creo una nueva carpeta
+
+                    for(int j=0; j<4; j++){
+                        char reset [12]="";
+                        strcpy(carpeta.b_content[j].b_name,reset);
+                        carpeta.b_content[j].b_inodo=-1;
+
+                        
+                        
+
+                    }
+                    /*Acá debo asociar el inodo con el nuevo bloque y escribir el nuevo bloque,
+                         además de actualizar el superbloque y el bitmap de bloques*/
+
+                    inodo.i_block[i] = superbloque.s_first_blo;    
+                    fseek(archivo,superbloque.s_first_blo,SEEK_SET);
+                    fwrite(&carpeta,sizeof(BloqueCarpeta),1,archivo);
+                    poscarpeta = superbloque.s_first_blo;
+
+                    fseek(archivo, posinodo,SEEK_SET);
+                    fwrite(&inodo,sizeof(Inodo),1,archivo);
+
+                    superbloque.s_free_blocks_count--;
+                    superbloque.s_first_blo+=sizeof(BloqueCarpeta);
+
+                    char registro;
+                    fseek(archivo,superbloque.s_bm_block_start,SEEK_SET);
+                    for(int i=0; i<superbloque.s_blocks_count;i++){
+                        fread(&registro, sizeof(char),1,archivo);
+                        if(registro=='0'){
+                            fseek(archivo,(superbloque.s_bm_inode_start+i),SEEK_SET);
+                            break; //Si ya encontré el espacio libre, me detengo
+                        }
+                    }
+                    fwrite("1",sizeof(char),1,archivo);
+                    strcpy(carpeta.b_content[0].b_name,nombreCarpeta.c_str());
+                    pos=0;
+                    i=11;
+                }
+
+
+            }
+
+            //Busco el primer inodo libre
+            fseek(archivo,superbloque.s_first_ino,SEEK_SET);
+            Inodo nuevoi;
+            nuevoi.i_uid=1;
+            nuevoi.i_gid=1;
+            nuevoi.i_ctime = time(nullptr);
+            nuevoi.i_mtime = time(nullptr);
+            nuevoi.i_type = '0';
+            nuevoi.i_perm = 664;
+            //Cambio el bitmap de inodos
+            fseek(archivo,superbloque.s_bm_inode_start,SEEK_SET);
+            char registro;
+            for(int i=0; i<superbloque.s_inodes_count;i++){
+                fread(&registro, sizeof(char),1,archivo);
+                if(registro=='0'){
+                    fseek(archivo,(superbloque.s_bm_inode_start+i),SEEK_SET);
+                    break; //Si ya encontré el espacio libre, me detengo
+                    
+                }
+            }
+            fwrite("1",sizeof(char),1,archivo);
+            
+            //Asocio la carpeta padre con el nuevo inodo
+            
+            carpeta.b_content[pos].b_inodo = superbloque.s_first_ino; 
+            //Escribo la carpeta modificada
+            fseek(archivo, poscarpeta,SEEK_SET);
+            fwrite(&carpeta,sizeof(BloqueCarpeta),1,archivo);
+            //superbloque.s_free_inodes_count--; //Disminuyo los inodos libres
+            //superbloque.s_first_ino+=sizeof(Inodo); //Actualizo la posición del primer inodo libre
+            
+            //Ahora creo el bloque correspondiente a la carpeta
+            BloqueCarpeta carpetanueva;
+            strcpy(carpetanueva.b_content[0].b_name,nombreCarpeta.c_str());
+            strcpy(carpetanueva.b_content[1].b_name,padre.c_str());
+
+            //Asocio el inodo con la carpeta nueva
+            nuevoi.i_block[0] = superbloque.s_first_blo;
+
+            fseek(archivo,superbloque.s_bm_block_start,SEEK_SET);
+            for(int i=0; i<superbloque.s_blocks_count;i++){
+                fread(&registro, sizeof(char),1,archivo);
+                if(registro=='0'){
+                    fseek(archivo,(superbloque.s_bm_block_start+i),SEEK_SET);
+                    break; //Si ya encontré el espacio libre, me detengo
+                }
+            }
+            fwrite("1",sizeof(char),1,archivo);
+
+            fseek(archivo,superbloque.s_first_ino,SEEK_SET); //Escribo el nuevo inodo
+            fwrite(&nuevoi,sizeof(Inodo),1,archivo);
+
+            fseek(archivo,superbloque.s_first_blo,SEEK_SET);
+            fwrite(&carpetanueva,sizeof(BloqueCarpeta),1,archivo);
+
+            superbloque.s_free_inodes_count--; //Disminuyo los inodos libres
+            superbloque.s_first_ino+=sizeof(Inodo); //Actualizo la posición del primer inodo libre
+            superbloque.s_free_blocks_count--;
+            superbloque.s_first_blo+=sizeof(BloqueCarpeta);
+
+            fseek(archivo,inicioParticion,SEEK_SET);
+            fwrite(&superbloque,sizeof(SuperBloque),1,archivo);
+
+            fclose(archivo);
+
+            cout<<"¡Carpeta creada con exito!"<<endl;
+
+
+        }
+        else{
+            cout<<"Error: No se encontró la ruta"<<endl;
+        }
+            
+                }        
+            }
+            }
+            else{
+                cout<<"Error: No ha iniciado sesión"<<endl;
+            }
+}
+
+void a_mkdir(char* parametros){
+    bool fpath=false;
+    bool fr=false;
+    
+    parametros = strtok(NULL," ");
+
+    string path;
+    while (parametros!=NULL){
+        string tmp = parametros;
+        string tipo = get_tipo_parametro(tmp);
+        string valor = get_valor_parametro(tmp);
+
+        if(tipo==">path"){
+            valor = regresarEspacio(valor);
+            path=valor;
+            fpath=true;
+        }
+        else if(tipo==">r"){
+            fr = true;
+        }
+        else if(tipo[0] == '#'){
+            //Si viene un comentario, no pasa nada
+            break;
+        }
+        else{
+            
+            cout<<"Parámetro inválido"<<endl;
+        }
+        parametros = strtok(NULL," ");
+        
+    }
+    //Trabajando con los parámetros
+    if(fpath){
+        crearCarpeta(path, fr);
+    }
+    else{
+        cout<<"Parámetros insuficientes para realizar una acción"<<endl;
+    }
+    cout<<"\n";
 }
 
 /*Funcion que define que comando es el que hay que ejecutar*/
@@ -4934,6 +5412,12 @@ void analizar(char *comando) {
     }
     else if(strcasecmp(token,"logout")==0){
         logout();
+    }
+    else if(strcasecmp(token,"mkgrp")==0){
+        mkgrp(token);
+    }
+    else if(strcasecmp(token,"mkdir")==0){
+        a_mkdir(token);
     }
     else if (token[0]=='#'){
         //Si es un comentario, no pasa nada

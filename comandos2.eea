@@ -33,3 +33,60 @@ pause
 
 #LOGIN
 login >user=root >pass=123 >id=811Disco1
+#CREACION DE GRUPOS
+#mkgrp >name=usuarios
+#mkgrp >name=adm
+#mkgrp >name=mail
+#mkgrp >name=news
+#mkgrp >name=sys
+
+#CREACION DE CARPETAS
+mkdir >path=/bin
+mkdir >path=/boot
+mkdir >path=/cdrom
+mkdir >path=/dev
+mkdir >path=/etc
+mkdir >path=/home
+mkdir >path=/lib
+mkdir >path=/lib64
+mkdir >path=/media
+mkdir >path=/mnt
+mkdir >path=/opt
+mkdir >path=/proc
+mkdir >path=/run
+mkdir >path=/sbin
+mkdir >path=/snap
+mkdir >path=/srv
+mkdir >path=/sys
+mkdir >path=/tmp
+mkdir >path=/var
+
+mkdir >path=/home/archivos
+mkdir >path="/home/archivos/archivos 19"
+mkdir >r >path=/home/archivos/user/docs/usac
+mkdir >r ->ath=/home/archivos/carpeta1/carpeta2/carpeta3/carpeta4/carpeta5
+
+#------------------------REPORTE 2----------------
+rep >id=811Disco1 >path="/home/luisa/archivos/reportes/reporte2_tree.jpg" >name=tree
+pause
+
+#CREACION DE ARCHIVOS
+mkfile >path=/home/archivos/user/docs/Tarea.txt -size=75
+mkfile >path=/home/archivos/user/docs/Tarea2.txt -size=1700
+#Para este comando hay que crear un archivo en la computadora y en cont poner la ruta de ese archivo
+#Crear un archivo txt en su escritorio llamado IA
+mkfile >path=/home/archivos/user/docs/Tarea3.txt -cont=/home/archivos/user/Desktop/IA.txt
+#Debe dar error porque la ruta no existe
+mkfile >path="/home/archivos/noexiste/b1.txt"
+#Debe dar error por size negativo
+mkfile >path="/home/archivos/b1.txt" -size=-45
+#Archivo con parametro -p
+mkfile >r -path=/home/archivos/user/docs/usac/archivos/proyectos/fase1/entrada.txt
+cat >file=/home/archivos/user/docs/Tarea2.txt
+cat >file=/home/archivos/user/docs/Tarea3.txt
+pause
+
+
+#------------------------REPORTE 3----------------
+rep >id=811Disco1 >path="/home/luisa/archivos/reportes/reporte3_tree.jpg" >name=tree
+pause

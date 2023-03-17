@@ -59,7 +59,7 @@ typedef struct
     int i_uid; //UID del usuario propietario del archivo o carpeta
     int i_gid; //GID del grupo al que pertenece el archivo o carpeta
     int i_s; //Tamaño del archivo en bytes
-    time_t i_atime; //Última fecha en que se leyó el inodo sin modificarlo
+    time_t i_atime=0; //Última fecha en que se leyó el inodo sin modificarlo
     time_t i_ctime; //Fecha en que se creó el inodo
     time_t i_mtime; //Última fecha en que se modifica el inodo
     int i_block[15]={-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1}; /*Array en que los primeros 12 registros son bloques directos*/

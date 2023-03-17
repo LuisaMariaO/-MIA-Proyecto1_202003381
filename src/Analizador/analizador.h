@@ -67,3 +67,8 @@ void login(char* parametros);
 void iniciarSesion(string user, string pass, string id);
 
 void logout();
+void mkgrp(char* parametros);
+void crearGrupo(string name);
+
+void a_mkdir(char* parametros);
+void crearCarpeta(string path,bool r);
