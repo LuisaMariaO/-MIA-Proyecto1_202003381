@@ -90,3 +90,14 @@ pause
 #------------------------REPORTE 3----------------
 rep >id=811Disco1 >path="/home/luisa/archivos/reportes/reporte3_tree.jpg" >name=tree
 pause
+mkdir >path=/home
+mkdir >path=/home/archivos
+mkdir >path=/home/archivos/mia
+mkdir >path=/home/archivos/mia/fase2
+mkdir >path=/home/archivos/mia/fase2/docs
+mkfile >path=/home/archivos/mia/fase2/docs/a.txt >size=5
+mkfile >path=/home/archivos/mia/fase2/docs/c.txt >size=5
+mkfile >path=/home/archivos/mia/fase2/docs/b.txt >size=10
+mkfile >path=/home/archivos/mia/fase2/docs/b.txt >size=10
+mkfile >path=/home/archivos/mia/fase2/docs/d.txt >cont=/home/luisa/archivos/cont.txt
+rep >id=811Disco1 >path="/home/luisa/archivos/reportes/reporte1_file.txt" >name=file >ruta=/home/archivos/mia/fase2/docs/d.txt

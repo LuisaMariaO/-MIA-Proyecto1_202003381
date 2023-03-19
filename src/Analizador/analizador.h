@@ -72,3 +72,7 @@ void crearGrupo(string name);
 
 void a_mkdir(char* parametros);
 void crearCarpeta(string path,bool r);
+
+void mkfile(char* parametros);
+/*Método 0 = size - Método 1 = cont*/
+void crearArchivo(string path, bool r, int size, string cont, bool metodo); 
